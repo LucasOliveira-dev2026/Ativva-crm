@@ -21,7 +21,7 @@
 | SB-73b9a5 | `scripts/inspect-source-schema.ts` | sdkImport:1 env:5,6 adminClient:6 db:11,19,26,30,37 | REPLACE_DB_LAYER | F1–F8 | ALTO | t:ai_knowledge_sources, NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY | PENDING |
 | SB-97d893 | `scripts/lib/automacoes-de-demonstracao.ts` |  | KEEP_DOMAIN_LOGIC | F8 | BAIXO |  | PENDING |
 | SB-acf25e | `scripts/lib/env-de-teste.ts` | env:76,77,82,89,95,96 adminClient:77,96,99 | REPLACE_DB_LAYER | F1–F8 | ALTO | NEXT_PUBLIC_SUPABASE_ANON_KEY, NEXT_PUBLIC_SUPABASE_URL, SUPABASE_DB_URL, SUPABASE_SERVICE_ROLE_KEY | PENDING |
-| SB-30a3e1 | `scripts/lib/gate-ativacao.ts` | adminClient:521,524,526 | REPLACE_DB_LAYER | F1–F8 | ALTO |  | PENDING |
+| SB-30a3e1 | `scripts/lib/gate-ativacao.ts` |  | REPLACE_DB_LAYER | F1–F8 | MÉDIO |  | PENDING |
 | SB-008172 | `scripts/lint-channels.ts` |  | REPLACE_DB_LAYER | F1–F8 | MÉDIO |  | PENDING |
 | SB-bf0059 | `scripts/local-env.sh` | adminClient:41,64,67,69,107 env:41,42,105,106,107,108 | REPLACE_DB_LAYER | F1–F8 | ALTO | NEXT_PUBLIC_SUPABASE_ANON_KEY, NEXT_PUBLIC_SUPABASE_URL, SUPABASE_DB_ADMIN_URL, SUPABASE_DB_URL +1 | PENDING |
 | SB-b9ea98 | `scripts/local-stack.sh` |  | REPLACE_DB_LAYER | F1–F8 | MÉDIO |  | PENDING |

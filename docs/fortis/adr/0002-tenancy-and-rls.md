@@ -33,21 +33,28 @@ do CRM ficam como estão; o que muda é de onde vem a identidade:
 | (não havia) | `fortis.current_company_id()` ← `app.current_company_id` (mesmo GUC do ATIVVA) |
 | `auth.jwt()->>'aal'` | `fortis.current_aal()` ← `app.current_aal` (do `acr` do Keycloak) |
 | `auth.jwt()->>'session_id'` | `fortis.current_session_id()` ← `app.current_session_id` (`sid`) |
-| `anon` / `authenticated` / `service_role` | `crm_anonymous` / `crm_user` / `crm_platform` |
+| `anon` / `authenticated` / `service_role` | `crm_anonymous` / `crm_authenticated` / `crm_service` |
 
-`fn_user_org_ids()` passa a devolver **associação ∩ empresa ativa** quando
-`app.current_company_id` está definido, e a associação completa quando não
-está (paridade com o upstream: nenhum acesso além das organizações do próprio
-usuário). A ausência do GUC nunca amplia além disso, e o usuário anônimo não
-tem associação nenhuma. Critério de saída do F2: toda transação de usuário
-define a empresa ativa, e aí a ausência passa a negar (fail-closed), provado
-pela suíte de isolamento.
+`fn_user_org_ids()` continua devolvendo o que o upstream devolve — as
+organizações do usuário **e** a da sessão de suporte ativa (impersonation) —
+e passa a recortar pela empresa ativa quando `app.current_company_id` está
+definido. A ausência do GUC nunca amplia além do comportamento do upstream, e o
+usuário anônimo não tem associação nenhuma. Critério de saída do F2: toda
+transação de usuário define a empresa ativa, e aí a ausência passa a negar
+(fail-closed), provado pela suíte de isolamento.
+
+Os papéis foram nomeados preservando a ordem alfabética dos originais
+(`crm_anonymous` < `crm_authenticated` < `crm_service`), porque código e testes
+ordenam por nome de papel.
 
 A reescrita do schema é **mecânica e reproduzível**
 (`scripts/fortis/baseline/neutralize.mjs`), com recusa se sobrar qualquer
 referência à plataforma Supabase; o `fn_user_org_ids` Fortis vem de um overlay
 aplicado depois do baseline (`database/platform/0100_fortis_tenancy.sql`),
-guardado por teste.
+que reproduz o corpo mais recente do upstream e só acrescenta o recorte; o
+`build.mjs` fixa o hash desse corpo e falha quando o upstream muda a função,
+obrigando a portar a mudança (sem isso, um overlay antigo apagaria em silêncio
+comportamento novo — foi o que o invariante `suporte-temporario` pegou).
 
 ## Consequências
 

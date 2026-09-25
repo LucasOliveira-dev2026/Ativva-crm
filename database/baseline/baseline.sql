@@ -919,7 +919,7 @@ $$;
 ALTER FUNCTION "public"."retrieve_top_k_chunks"("p_organization_id" "uuid", "p_kb_version_id" "uuid", "p_embedding" "public"."vector", "p_k" integer, "p_threshold" real) OWNER TO "crm_owner";
 
 
-COMMENT ON FUNCTION "public"."retrieve_top_k_chunks"("p_organization_id" "uuid", "p_kb_version_id" "uuid", "p_embedding" "public"."vector", "p_k" integer, "p_threshold" real) IS 'Top-K cosine similarity over ai_chunks. SECURITY DEFINER + programmatic org_id filter. Caller must validate p_organization_id matches crm_user tenant.';
+COMMENT ON FUNCTION "public"."retrieve_top_k_chunks"("p_organization_id" "uuid", "p_kb_version_id" "uuid", "p_embedding" "public"."vector", "p_k" integer, "p_threshold" real) IS 'Top-K cosine similarity over ai_chunks. SECURITY DEFINER + programmatic org_id filter. Caller must validate p_organization_id matches crm_authenticated tenant.';
 
 -- `rls_auto_enable()` (event trigger candidato para ligar RLS automaticamente em
 -- toda CREATE TABLE) foi removida em 2026-08-27: nunca existiu um `CREATE EVENT
@@ -4032,7 +4032,7 @@ END IF; END $baseline_guard$;
 DO $baseline_guard$ BEGIN
 IF NOT EXISTS (SELECT 1 FROM pg_policy
                 WHERE polname = 'audit_log_insert_tenant_member' AND polrelid = '"public"."api_audit_log"'::regclass) THEN
-CREATE POLICY "audit_log_insert_tenant_member" ON "public"."api_audit_log" FOR INSERT TO "crm_user" WITH CHECK ((("organization_id" IS NULL) OR ("organization_id" IN ( SELECT "public"."fn_user_org_ids"() AS "fn_user_org_ids")) OR "public"."fn_is_platform_admin"()));
+CREATE POLICY "audit_log_insert_tenant_member" ON "public"."api_audit_log" FOR INSERT TO "crm_authenticated" WITH CHECK ((("organization_id" IS NULL) OR ("organization_id" IN ( SELECT "public"."fn_user_org_ids"() AS "fn_user_org_ids")) OR "public"."fn_is_platform_admin"()));
 END IF; END $baseline_guard$;
 
 
@@ -4340,384 +4340,384 @@ END IF; END $baseline_guard$;
 
 GRANT USAGE ON SCHEMA "public" TO "crm_owner";
 GRANT USAGE ON SCHEMA "public" TO "crm_anonymous";
-GRANT USAGE ON SCHEMA "public" TO "crm_user";
-GRANT USAGE ON SCHEMA "public" TO "crm_platform";
+GRANT USAGE ON SCHEMA "public" TO "crm_authenticated";
+GRANT USAGE ON SCHEMA "public" TO "crm_service";
 
 
 
 REVOKE ALL ON FUNCTION "public"."activate_kb_version"("p_agent_id" "uuid", "p_version_id" "uuid") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."activate_kb_version"("p_agent_id" "uuid", "p_version_id" "uuid") TO "crm_platform";
+GRANT ALL ON FUNCTION "public"."activate_kb_version"("p_agent_id" "uuid", "p_version_id" "uuid") TO "crm_service";
 
 
 
-GRANT ALL ON FUNCTION "public"."emit_event"("p_event_type" "text", "p_entity_kind" "text", "p_entity_id" "uuid", "p_payload" "jsonb", "p_metadata" "jsonb", "p_organization_id" "uuid") TO "crm_user";
-GRANT ALL ON FUNCTION "public"."emit_event"("p_event_type" "text", "p_entity_kind" "text", "p_entity_id" "uuid", "p_payload" "jsonb", "p_metadata" "jsonb", "p_organization_id" "uuid") TO "crm_platform";
+GRANT ALL ON FUNCTION "public"."emit_event"("p_event_type" "text", "p_entity_kind" "text", "p_entity_id" "uuid", "p_payload" "jsonb", "p_metadata" "jsonb", "p_organization_id" "uuid") TO "crm_authenticated";
+GRANT ALL ON FUNCTION "public"."emit_event"("p_event_type" "text", "p_entity_kind" "text", "p_entity_id" "uuid", "p_payload" "jsonb", "p_metadata" "jsonb", "p_organization_id" "uuid") TO "crm_service";
 
 
 
-GRANT ALL ON FUNCTION "public"."fn_audit_log_row"() TO "crm_platform";
+GRANT ALL ON FUNCTION "public"."fn_audit_log_row"() TO "crm_service";
 
 
 
 GRANT ALL ON FUNCTION "public"."fn_crm_lead_close_on_stage"() TO "crm_anonymous";
-GRANT ALL ON FUNCTION "public"."fn_crm_lead_close_on_stage"() TO "crm_user";
-GRANT ALL ON FUNCTION "public"."fn_crm_lead_close_on_stage"() TO "crm_platform";
+GRANT ALL ON FUNCTION "public"."fn_crm_lead_close_on_stage"() TO "crm_authenticated";
+GRANT ALL ON FUNCTION "public"."fn_crm_lead_close_on_stage"() TO "crm_service";
 
 
 
 REVOKE ALL ON FUNCTION "public"."fn_decrypt_oauth"("ciphertext" "bytea") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."fn_decrypt_oauth"("ciphertext" "bytea") TO "crm_platform";
+GRANT ALL ON FUNCTION "public"."fn_decrypt_oauth"("ciphertext" "bytea") TO "crm_service";
 
 
 
 GRANT ALL ON FUNCTION "public"."fn_emit_channel_session_status_changed"() TO "crm_anonymous";
-GRANT ALL ON FUNCTION "public"."fn_emit_channel_session_status_changed"() TO "crm_user";
-GRANT ALL ON FUNCTION "public"."fn_emit_channel_session_status_changed"() TO "crm_platform";
+GRANT ALL ON FUNCTION "public"."fn_emit_channel_session_status_changed"() TO "crm_authenticated";
+GRANT ALL ON FUNCTION "public"."fn_emit_channel_session_status_changed"() TO "crm_service";
 
 
 
 GRANT ALL ON FUNCTION "public"."fn_emit_event_on_lead_change"() TO "crm_anonymous";
-GRANT ALL ON FUNCTION "public"."fn_emit_event_on_lead_change"() TO "crm_user";
-GRANT ALL ON FUNCTION "public"."fn_emit_event_on_lead_change"() TO "crm_platform";
+GRANT ALL ON FUNCTION "public"."fn_emit_event_on_lead_change"() TO "crm_authenticated";
+GRANT ALL ON FUNCTION "public"."fn_emit_event_on_lead_change"() TO "crm_service";
 
 
 
 GRANT ALL ON FUNCTION "public"."fn_emit_message_event"() TO "crm_anonymous";
-GRANT ALL ON FUNCTION "public"."fn_emit_message_event"() TO "crm_user";
-GRANT ALL ON FUNCTION "public"."fn_emit_message_event"() TO "crm_platform";
+GRANT ALL ON FUNCTION "public"."fn_emit_message_event"() TO "crm_authenticated";
+GRANT ALL ON FUNCTION "public"."fn_emit_message_event"() TO "crm_service";
 
 
 
 REVOKE ALL ON FUNCTION "public"."fn_encrypt_oauth"("plaintext" "text") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."fn_encrypt_oauth"("plaintext" "text") TO "crm_platform";
+GRANT ALL ON FUNCTION "public"."fn_encrypt_oauth"("plaintext" "text") TO "crm_service";
 
 
 
-GRANT ALL ON FUNCTION "public"."fn_is_platform_admin"() TO "crm_user";
-GRANT ALL ON FUNCTION "public"."fn_is_platform_admin"() TO "crm_platform";
+GRANT ALL ON FUNCTION "public"."fn_is_platform_admin"() TO "crm_authenticated";
+GRANT ALL ON FUNCTION "public"."fn_is_platform_admin"() TO "crm_service";
 
 
 
 REVOKE ALL ON FUNCTION "public"."fn_lgpd_cascade_redact_contact"("p_organization_id" "uuid", "p_contact_id" "uuid", "p_request_id" "uuid") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."fn_lgpd_cascade_redact_contact"("p_organization_id" "uuid", "p_contact_id" "uuid", "p_request_id" "uuid") TO "crm_platform";
+GRANT ALL ON FUNCTION "public"."fn_lgpd_cascade_redact_contact"("p_organization_id" "uuid", "p_contact_id" "uuid", "p_request_id" "uuid") TO "crm_service";
 
 
 
-GRANT ALL ON FUNCTION "public"."fn_log_event"("p_organization_id" "uuid", "p_event_type" "text", "p_payload" "jsonb") TO "crm_user";
-GRANT ALL ON FUNCTION "public"."fn_log_event"("p_organization_id" "uuid", "p_event_type" "text", "p_payload" "jsonb") TO "crm_platform";
+GRANT ALL ON FUNCTION "public"."fn_log_event"("p_organization_id" "uuid", "p_event_type" "text", "p_payload" "jsonb") TO "crm_authenticated";
+GRANT ALL ON FUNCTION "public"."fn_log_event"("p_organization_id" "uuid", "p_event_type" "text", "p_payload" "jsonb") TO "crm_service";
 
 
 
-GRANT ALL ON FUNCTION "public"."fn_publish_ai_agent_version"("p_org_id" "uuid", "p_agent_id" "uuid", "p_version_id" "uuid") TO "crm_platform";
+GRANT ALL ON FUNCTION "public"."fn_publish_ai_agent_version"("p_org_id" "uuid", "p_agent_id" "uuid", "p_version_id" "uuid") TO "crm_service";
 
 
 
-GRANT ALL ON FUNCTION "public"."fn_role_at_least"("p_org" "uuid", "p_min" "text") TO "crm_user";
-GRANT ALL ON FUNCTION "public"."fn_role_at_least"("p_org" "uuid", "p_min" "text") TO "crm_platform";
+GRANT ALL ON FUNCTION "public"."fn_role_at_least"("p_org" "uuid", "p_min" "text") TO "crm_authenticated";
+GRANT ALL ON FUNCTION "public"."fn_role_at_least"("p_org" "uuid", "p_min" "text") TO "crm_service";
 
 
 
 GRANT ALL ON FUNCTION "public"."fn_seed_default_pipeline_for_org"() TO "crm_anonymous";
-GRANT ALL ON FUNCTION "public"."fn_seed_default_pipeline_for_org"() TO "crm_user";
-GRANT ALL ON FUNCTION "public"."fn_seed_default_pipeline_for_org"() TO "crm_platform";
+GRANT ALL ON FUNCTION "public"."fn_seed_default_pipeline_for_org"() TO "crm_authenticated";
+GRANT ALL ON FUNCTION "public"."fn_seed_default_pipeline_for_org"() TO "crm_service";
 
 
 
 GRANT ALL ON FUNCTION "public"."fn_set_updated_at"() TO "crm_anonymous";
-GRANT ALL ON FUNCTION "public"."fn_set_updated_at"() TO "crm_user";
-GRANT ALL ON FUNCTION "public"."fn_set_updated_at"() TO "crm_platform";
+GRANT ALL ON FUNCTION "public"."fn_set_updated_at"() TO "crm_authenticated";
+GRANT ALL ON FUNCTION "public"."fn_set_updated_at"() TO "crm_service";
 
 
 
 GRANT ALL ON FUNCTION "public"."fn_touch_updated_at"() TO "crm_anonymous";
-GRANT ALL ON FUNCTION "public"."fn_touch_updated_at"() TO "crm_user";
-GRANT ALL ON FUNCTION "public"."fn_touch_updated_at"() TO "crm_platform";
+GRANT ALL ON FUNCTION "public"."fn_touch_updated_at"() TO "crm_authenticated";
+GRANT ALL ON FUNCTION "public"."fn_touch_updated_at"() TO "crm_service";
 
 
 
 REVOKE ALL ON FUNCTION "public"."fn_update_budget_consumption"() FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."fn_update_budget_consumption"() TO "crm_platform";
+GRANT ALL ON FUNCTION "public"."fn_update_budget_consumption"() TO "crm_service";
 
 
 
 GRANT ALL ON FUNCTION "public"."fn_update_last_activity_at"() TO "crm_anonymous";
-GRANT ALL ON FUNCTION "public"."fn_update_last_activity_at"() TO "crm_user";
-GRANT ALL ON FUNCTION "public"."fn_update_last_activity_at"() TO "crm_platform";
+GRANT ALL ON FUNCTION "public"."fn_update_last_activity_at"() TO "crm_authenticated";
+GRANT ALL ON FUNCTION "public"."fn_update_last_activity_at"() TO "crm_service";
 
 
 
-GRANT ALL ON FUNCTION "public"."fn_user_org_ids"() TO "crm_user";
-GRANT ALL ON FUNCTION "public"."fn_user_org_ids"() TO "crm_platform";
+GRANT ALL ON FUNCTION "public"."fn_user_org_ids"() TO "crm_authenticated";
+GRANT ALL ON FUNCTION "public"."fn_user_org_ids"() TO "crm_service";
 
 
 
-GRANT ALL ON FUNCTION "public"."fn_user_role_in"("p_org" "uuid") TO "crm_user";
-GRANT ALL ON FUNCTION "public"."fn_user_role_in"("p_org" "uuid") TO "crm_platform";
+GRANT ALL ON FUNCTION "public"."fn_user_role_in"("p_org" "uuid") TO "crm_authenticated";
+GRANT ALL ON FUNCTION "public"."fn_user_role_in"("p_org" "uuid") TO "crm_service";
 
 
 
-GRANT ALL ON FUNCTION "public"."fn_user_role_in_org"("p_org" "uuid") TO "crm_user";
-GRANT ALL ON FUNCTION "public"."fn_user_role_in_org"("p_org" "uuid") TO "crm_platform";
+GRANT ALL ON FUNCTION "public"."fn_user_role_in_org"("p_org" "uuid") TO "crm_authenticated";
+GRANT ALL ON FUNCTION "public"."fn_user_role_in_org"("p_org" "uuid") TO "crm_service";
 
 
 
 GRANT ALL ON FUNCTION "public"."fn_validate_activity_lead_org"() TO "crm_anonymous";
-GRANT ALL ON FUNCTION "public"."fn_validate_activity_lead_org"() TO "crm_user";
-GRANT ALL ON FUNCTION "public"."fn_validate_activity_lead_org"() TO "crm_platform";
+GRANT ALL ON FUNCTION "public"."fn_validate_activity_lead_org"() TO "crm_authenticated";
+GRANT ALL ON FUNCTION "public"."fn_validate_activity_lead_org"() TO "crm_service";
 
 
 
 GRANT ALL ON FUNCTION "public"."fn_validate_lost_reason_required"() TO "crm_anonymous";
-GRANT ALL ON FUNCTION "public"."fn_validate_lost_reason_required"() TO "crm_user";
-GRANT ALL ON FUNCTION "public"."fn_validate_lost_reason_required"() TO "crm_platform";
+GRANT ALL ON FUNCTION "public"."fn_validate_lost_reason_required"() TO "crm_authenticated";
+GRANT ALL ON FUNCTION "public"."fn_validate_lost_reason_required"() TO "crm_service";
 
 
 
 GRANT ALL ON FUNCTION "public"."midpoint"("p_prev" numeric, "p_next" numeric) TO "crm_anonymous";
-GRANT ALL ON FUNCTION "public"."midpoint"("p_prev" numeric, "p_next" numeric) TO "crm_user";
-GRANT ALL ON FUNCTION "public"."midpoint"("p_prev" numeric, "p_next" numeric) TO "crm_platform";
+GRANT ALL ON FUNCTION "public"."midpoint"("p_prev" numeric, "p_next" numeric) TO "crm_authenticated";
+GRANT ALL ON FUNCTION "public"."midpoint"("p_prev" numeric, "p_next" numeric) TO "crm_service";
 
 
 
 REVOKE ALL ON FUNCTION "public"."retrieve_top_k_chunks"("p_organization_id" "uuid", "p_kb_version_id" "uuid", "p_embedding" "public"."vector", "p_k" integer, "p_threshold" real) FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."retrieve_top_k_chunks"("p_organization_id" "uuid", "p_kb_version_id" "uuid", "p_embedding" "public"."vector", "p_k" integer, "p_threshold" real) TO "crm_user";
-GRANT ALL ON FUNCTION "public"."retrieve_top_k_chunks"("p_organization_id" "uuid", "p_kb_version_id" "uuid", "p_embedding" "public"."vector", "p_k" integer, "p_threshold" real) TO "crm_platform";
+GRANT ALL ON FUNCTION "public"."retrieve_top_k_chunks"("p_organization_id" "uuid", "p_kb_version_id" "uuid", "p_embedding" "public"."vector", "p_k" integer, "p_threshold" real) TO "crm_authenticated";
+GRANT ALL ON FUNCTION "public"."retrieve_top_k_chunks"("p_organization_id" "uuid", "p_kb_version_id" "uuid", "p_embedding" "public"."vector", "p_k" integer, "p_threshold" real) TO "crm_service";
 
 
 
-GRANT ALL ON TABLE "public"."ai_agent_runs" TO "crm_user";
-GRANT ALL ON TABLE "public"."ai_agent_runs" TO "crm_platform";
+GRANT ALL ON TABLE "public"."ai_agent_runs" TO "crm_authenticated";
+GRANT ALL ON TABLE "public"."ai_agent_runs" TO "crm_service";
 
 
 
-GRANT ALL ON TABLE "public"."ai_agent_versions" TO "crm_user";
-GRANT ALL ON TABLE "public"."ai_agent_versions" TO "crm_platform";
+GRANT ALL ON TABLE "public"."ai_agent_versions" TO "crm_authenticated";
+GRANT ALL ON TABLE "public"."ai_agent_versions" TO "crm_service";
 
 
 
 GRANT ALL ON TABLE "public"."ai_agents" TO "crm_anonymous";
-GRANT ALL ON TABLE "public"."ai_agents" TO "crm_user";
-GRANT ALL ON TABLE "public"."ai_agents" TO "crm_platform";
+GRANT ALL ON TABLE "public"."ai_agents" TO "crm_authenticated";
+GRANT ALL ON TABLE "public"."ai_agents" TO "crm_service";
 
 
 
 GRANT ALL ON TABLE "public"."ai_budgets" TO "crm_anonymous";
-GRANT ALL ON TABLE "public"."ai_budgets" TO "crm_user";
-GRANT ALL ON TABLE "public"."ai_budgets" TO "crm_platform";
+GRANT ALL ON TABLE "public"."ai_budgets" TO "crm_authenticated";
+GRANT ALL ON TABLE "public"."ai_budgets" TO "crm_service";
 
 
 
 GRANT ALL ON TABLE "public"."ai_chunks" TO "crm_anonymous";
-GRANT ALL ON TABLE "public"."ai_chunks" TO "crm_user";
-GRANT ALL ON TABLE "public"."ai_chunks" TO "crm_platform";
+GRANT ALL ON TABLE "public"."ai_chunks" TO "crm_authenticated";
+GRANT ALL ON TABLE "public"."ai_chunks" TO "crm_service";
 
 
 
 GRANT ALL ON TABLE "public"."ai_faq_items" TO "crm_anonymous";
-GRANT ALL ON TABLE "public"."ai_faq_items" TO "crm_user";
-GRANT ALL ON TABLE "public"."ai_faq_items" TO "crm_platform";
+GRANT ALL ON TABLE "public"."ai_faq_items" TO "crm_authenticated";
+GRANT ALL ON TABLE "public"."ai_faq_items" TO "crm_service";
 
 
 
 GRANT ALL ON TABLE "public"."ai_invocations" TO "crm_anonymous";
-GRANT ALL ON TABLE "public"."ai_invocations" TO "crm_user";
-GRANT ALL ON TABLE "public"."ai_invocations" TO "crm_platform";
+GRANT ALL ON TABLE "public"."ai_invocations" TO "crm_authenticated";
+GRANT ALL ON TABLE "public"."ai_invocations" TO "crm_service";
 
 
 
 GRANT ALL ON TABLE "public"."ai_knowledge_sources" TO "crm_anonymous";
-GRANT ALL ON TABLE "public"."ai_knowledge_sources" TO "crm_user";
-GRANT ALL ON TABLE "public"."ai_knowledge_sources" TO "crm_platform";
+GRANT ALL ON TABLE "public"."ai_knowledge_sources" TO "crm_authenticated";
+GRANT ALL ON TABLE "public"."ai_knowledge_sources" TO "crm_service";
 
 
 
 GRANT ALL ON TABLE "public"."ai_knowledge_versions" TO "crm_anonymous";
-GRANT ALL ON TABLE "public"."ai_knowledge_versions" TO "crm_user";
-GRANT ALL ON TABLE "public"."ai_knowledge_versions" TO "crm_platform";
+GRANT ALL ON TABLE "public"."ai_knowledge_versions" TO "crm_authenticated";
+GRANT ALL ON TABLE "public"."ai_knowledge_versions" TO "crm_service";
 
 
 
 GRANT ALL ON TABLE "public"."ai_models" TO "crm_anonymous";
-GRANT ALL ON TABLE "public"."ai_models" TO "crm_user";
-GRANT ALL ON TABLE "public"."ai_models" TO "crm_platform";
+GRANT ALL ON TABLE "public"."ai_models" TO "crm_authenticated";
+GRANT ALL ON TABLE "public"."ai_models" TO "crm_service";
 
 
 
 GRANT ALL ON TABLE "public"."ai_pricing" TO "crm_anonymous";
-GRANT ALL ON TABLE "public"."ai_pricing" TO "crm_user";
-GRANT ALL ON TABLE "public"."ai_pricing" TO "crm_platform";
+GRANT ALL ON TABLE "public"."ai_pricing" TO "crm_authenticated";
+GRANT ALL ON TABLE "public"."ai_pricing" TO "crm_service";
 
 
 
-GRANT ALL ON TABLE "public"."ai_provider_credentials" TO "crm_user";
-GRANT ALL ON TABLE "public"."ai_provider_credentials" TO "crm_platform";
+GRANT ALL ON TABLE "public"."ai_provider_credentials" TO "crm_authenticated";
+GRANT ALL ON TABLE "public"."ai_provider_credentials" TO "crm_service";
 
 
 
-GRANT ALL ON TABLE "public"."ai_provider_credentials_safe" TO "crm_user";
-GRANT ALL ON TABLE "public"."ai_provider_credentials_safe" TO "crm_platform";
+GRANT ALL ON TABLE "public"."ai_provider_credentials_safe" TO "crm_authenticated";
+GRANT ALL ON TABLE "public"."ai_provider_credentials_safe" TO "crm_service";
 
 
 
 GRANT SELECT,INSERT,REFERENCES,TRIGGER,TRUNCATE ON TABLE "public"."api_audit_log" TO "crm_anonymous";
-GRANT SELECT,INSERT,REFERENCES,TRIGGER,TRUNCATE ON TABLE "public"."api_audit_log" TO "crm_user";
-GRANT SELECT,INSERT,REFERENCES,TRIGGER,TRUNCATE ON TABLE "public"."api_audit_log" TO "crm_platform";
+GRANT SELECT,INSERT,REFERENCES,TRIGGER,TRUNCATE ON TABLE "public"."api_audit_log" TO "crm_authenticated";
+GRANT SELECT,INSERT,REFERENCES,TRIGGER,TRUNCATE ON TABLE "public"."api_audit_log" TO "crm_service";
 
 
 
 GRANT ALL ON TABLE "public"."api_tokens" TO "crm_anonymous";
-GRANT ALL ON TABLE "public"."api_tokens" TO "crm_user";
-GRANT ALL ON TABLE "public"."api_tokens" TO "crm_platform";
+GRANT ALL ON TABLE "public"."api_tokens" TO "crm_authenticated";
+GRANT ALL ON TABLE "public"."api_tokens" TO "crm_service";
 
 
 
 GRANT ALL ON TABLE "public"."channel_session_warmup" TO "crm_anonymous";
-GRANT ALL ON TABLE "public"."channel_session_warmup" TO "crm_user";
-GRANT ALL ON TABLE "public"."channel_session_warmup" TO "crm_platform";
+GRANT ALL ON TABLE "public"."channel_session_warmup" TO "crm_authenticated";
+GRANT ALL ON TABLE "public"."channel_session_warmup" TO "crm_service";
 
 
 
 GRANT ALL ON TABLE "public"."channel_sessions" TO "crm_anonymous";
-GRANT ALL ON TABLE "public"."channel_sessions" TO "crm_user";
-GRANT ALL ON TABLE "public"."channel_sessions" TO "crm_platform";
+GRANT ALL ON TABLE "public"."channel_sessions" TO "crm_authenticated";
+GRANT ALL ON TABLE "public"."channel_sessions" TO "crm_service";
 
 
 
 GRANT ALL ON TABLE "public"."contacts" TO "crm_anonymous";
-GRANT ALL ON TABLE "public"."contacts" TO "crm_user";
-GRANT ALL ON TABLE "public"."contacts" TO "crm_platform";
+GRANT ALL ON TABLE "public"."contacts" TO "crm_authenticated";
+GRANT ALL ON TABLE "public"."contacts" TO "crm_service";
 
 
 
 GRANT ALL ON TABLE "public"."conversations" TO "crm_anonymous";
-GRANT ALL ON TABLE "public"."conversations" TO "crm_user";
-GRANT ALL ON TABLE "public"."conversations" TO "crm_platform";
+GRANT ALL ON TABLE "public"."conversations" TO "crm_authenticated";
+GRANT ALL ON TABLE "public"."conversations" TO "crm_service";
 
 
 
 GRANT SELECT,INSERT,REFERENCES,TRIGGER,TRUNCATE ON TABLE "public"."crm_lead_activities" TO "crm_anonymous";
-GRANT SELECT,INSERT,REFERENCES,TRIGGER,TRUNCATE ON TABLE "public"."crm_lead_activities" TO "crm_user";
-GRANT ALL ON TABLE "public"."crm_lead_activities" TO "crm_platform";
+GRANT SELECT,INSERT,REFERENCES,TRIGGER,TRUNCATE ON TABLE "public"."crm_lead_activities" TO "crm_authenticated";
+GRANT ALL ON TABLE "public"."crm_lead_activities" TO "crm_service";
 
 
 
 GRANT ALL ON TABLE "public"."crm_lead_links" TO "crm_anonymous";
-GRANT ALL ON TABLE "public"."crm_lead_links" TO "crm_user";
-GRANT ALL ON TABLE "public"."crm_lead_links" TO "crm_platform";
+GRANT ALL ON TABLE "public"."crm_lead_links" TO "crm_authenticated";
+GRANT ALL ON TABLE "public"."crm_lead_links" TO "crm_service";
 
 
 
 GRANT ALL ON TABLE "public"."crm_leads" TO "crm_anonymous";
-GRANT ALL ON TABLE "public"."crm_leads" TO "crm_user";
-GRANT ALL ON TABLE "public"."crm_leads" TO "crm_platform";
+GRANT ALL ON TABLE "public"."crm_leads" TO "crm_authenticated";
+GRANT ALL ON TABLE "public"."crm_leads" TO "crm_service";
 
 
 
 GRANT ALL ON TABLE "public"."crm_pipelines" TO "crm_anonymous";
-GRANT ALL ON TABLE "public"."crm_pipelines" TO "crm_user";
-GRANT ALL ON TABLE "public"."crm_pipelines" TO "crm_platform";
+GRANT ALL ON TABLE "public"."crm_pipelines" TO "crm_authenticated";
+GRANT ALL ON TABLE "public"."crm_pipelines" TO "crm_service";
 
 
 
 GRANT ALL ON TABLE "public"."crm_stages" TO "crm_anonymous";
-GRANT ALL ON TABLE "public"."crm_stages" TO "crm_user";
-GRANT ALL ON TABLE "public"."crm_stages" TO "crm_platform";
+GRANT ALL ON TABLE "public"."crm_stages" TO "crm_authenticated";
+GRANT ALL ON TABLE "public"."crm_stages" TO "crm_service";
 
 
 
 GRANT SELECT,REFERENCES,TRIGGER,TRUNCATE ON TABLE "public"."event_log" TO "crm_anonymous";
-GRANT SELECT,REFERENCES,TRIGGER,TRUNCATE ON TABLE "public"."event_log" TO "crm_user";
-GRANT ALL ON TABLE "public"."event_log" TO "crm_platform";
+GRANT SELECT,REFERENCES,TRIGGER,TRUNCATE ON TABLE "public"."event_log" TO "crm_authenticated";
+GRANT ALL ON TABLE "public"."event_log" TO "crm_service";
 
 
 
 GRANT ALL ON TABLE "public"."idempotency_keys" TO "crm_anonymous";
-GRANT ALL ON TABLE "public"."idempotency_keys" TO "crm_user";
-GRANT ALL ON TABLE "public"."idempotency_keys" TO "crm_platform";
+GRANT ALL ON TABLE "public"."idempotency_keys" TO "crm_authenticated";
+GRANT ALL ON TABLE "public"."idempotency_keys" TO "crm_service";
 
 
 
 GRANT ALL ON TABLE "public"."incidents" TO "crm_anonymous";
-GRANT ALL ON TABLE "public"."incidents" TO "crm_user";
-GRANT ALL ON TABLE "public"."incidents" TO "crm_platform";
+GRANT ALL ON TABLE "public"."incidents" TO "crm_authenticated";
+GRANT ALL ON TABLE "public"."incidents" TO "crm_service";
 
 
 
 GRANT ALL ON TABLE "public"."lgpd_requests" TO "crm_anonymous";
-GRANT ALL ON TABLE "public"."lgpd_requests" TO "crm_user";
-GRANT ALL ON TABLE "public"."lgpd_requests" TO "crm_platform";
+GRANT ALL ON TABLE "public"."lgpd_requests" TO "crm_authenticated";
+GRANT ALL ON TABLE "public"."lgpd_requests" TO "crm_service";
 
 
 
 GRANT ALL ON TABLE "public"."merge_queue" TO "crm_anonymous";
-GRANT ALL ON TABLE "public"."merge_queue" TO "crm_user";
-GRANT ALL ON TABLE "public"."merge_queue" TO "crm_platform";
+GRANT ALL ON TABLE "public"."merge_queue" TO "crm_authenticated";
+GRANT ALL ON TABLE "public"."merge_queue" TO "crm_service";
 
 
 
 GRANT ALL ON TABLE "public"."messages" TO "crm_anonymous";
-GRANT ALL ON TABLE "public"."messages" TO "crm_user";
-GRANT ALL ON TABLE "public"."messages" TO "crm_platform";
+GRANT ALL ON TABLE "public"."messages" TO "crm_authenticated";
+GRANT ALL ON TABLE "public"."messages" TO "crm_service";
 
 
 
 GRANT ALL ON TABLE "public"."nuvemshop_products" TO "crm_anonymous";
-GRANT ALL ON TABLE "public"."nuvemshop_products" TO "crm_user";
-GRANT ALL ON TABLE "public"."nuvemshop_products" TO "crm_platform";
+GRANT ALL ON TABLE "public"."nuvemshop_products" TO "crm_authenticated";
+GRANT ALL ON TABLE "public"."nuvemshop_products" TO "crm_service";
 
 
 
 GRANT ALL ON TABLE "public"."orders" TO "crm_anonymous";
-GRANT ALL ON TABLE "public"."orders" TO "crm_user";
-GRANT ALL ON TABLE "public"."orders" TO "crm_platform";
+GRANT ALL ON TABLE "public"."orders" TO "crm_authenticated";
+GRANT ALL ON TABLE "public"."orders" TO "crm_service";
 
 
 
 GRANT ALL ON TABLE "public"."organizations" TO "crm_anonymous";
-GRANT ALL ON TABLE "public"."organizations" TO "crm_user";
-GRANT ALL ON TABLE "public"."organizations" TO "crm_platform";
+GRANT ALL ON TABLE "public"."organizations" TO "crm_authenticated";
+GRANT ALL ON TABLE "public"."organizations" TO "crm_service";
 
 
 
 GRANT ALL ON TABLE "public"."platform_admins" TO "crm_anonymous";
-GRANT ALL ON TABLE "public"."platform_admins" TO "crm_user";
-GRANT ALL ON TABLE "public"."platform_admins" TO "crm_platform";
+GRANT ALL ON TABLE "public"."platform_admins" TO "crm_authenticated";
+GRANT ALL ON TABLE "public"."platform_admins" TO "crm_service";
 
 
 
-GRANT ALL ON TABLE "public"."storage_redaction_queue" TO "crm_user";
-GRANT ALL ON TABLE "public"."storage_redaction_queue" TO "crm_platform";
+GRANT ALL ON TABLE "public"."storage_redaction_queue" TO "crm_authenticated";
+GRANT ALL ON TABLE "public"."storage_redaction_queue" TO "crm_service";
 
 
 
 GRANT ALL ON TABLE "public"."tenant_integrations" TO "crm_anonymous";
-GRANT ALL ON TABLE "public"."tenant_integrations" TO "crm_user";
-GRANT ALL ON TABLE "public"."tenant_integrations" TO "crm_platform";
+GRANT ALL ON TABLE "public"."tenant_integrations" TO "crm_authenticated";
+GRANT ALL ON TABLE "public"."tenant_integrations" TO "crm_service";
 
 
 
 GRANT ALL ON TABLE "public"."user_organizations" TO "crm_anonymous";
-GRANT ALL ON TABLE "public"."user_organizations" TO "crm_user";
-GRANT ALL ON TABLE "public"."user_organizations" TO "crm_platform";
+GRANT ALL ON TABLE "public"."user_organizations" TO "crm_authenticated";
+GRANT ALL ON TABLE "public"."user_organizations" TO "crm_service";
 
 
 
 GRANT ALL ON TABLE "public"."user_recovery_codes" TO "crm_anonymous";
-GRANT ALL ON TABLE "public"."user_recovery_codes" TO "crm_user";
-GRANT ALL ON TABLE "public"."user_recovery_codes" TO "crm_platform";
+GRANT ALL ON TABLE "public"."user_recovery_codes" TO "crm_authenticated";
+GRANT ALL ON TABLE "public"."user_recovery_codes" TO "crm_service";
 
 
 
 GRANT SELECT,REFERENCES,TRIGGER,TRUNCATE ON TABLE "public"."webhook_events_log" TO "crm_anonymous";
-GRANT SELECT,REFERENCES,TRIGGER,TRUNCATE ON TABLE "public"."webhook_events_log" TO "crm_user";
-GRANT ALL ON TABLE "public"."webhook_events_log" TO "crm_platform";
+GRANT SELECT,REFERENCES,TRIGGER,TRUNCATE ON TABLE "public"."webhook_events_log" TO "crm_authenticated";
+GRANT ALL ON TABLE "public"."webhook_events_log" TO "crm_service";
 
 
 
 ALTER DEFAULT PRIVILEGES FOR ROLE "crm_owner" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "crm_owner";
 ALTER DEFAULT PRIVILEGES FOR ROLE "crm_owner" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "crm_anonymous";
-ALTER DEFAULT PRIVILEGES FOR ROLE "crm_owner" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "crm_user";
-ALTER DEFAULT PRIVILEGES FOR ROLE "crm_owner" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "crm_platform";
+ALTER DEFAULT PRIVILEGES FOR ROLE "crm_owner" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "crm_authenticated";
+ALTER DEFAULT PRIVILEGES FOR ROLE "crm_owner" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "crm_service";
 
 
 
@@ -4726,8 +4726,8 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "crm_owner" IN SCHEMA "public" GRANT ALL ON SE
 
 ALTER DEFAULT PRIVILEGES FOR ROLE "crm_owner" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "crm_owner";
 ALTER DEFAULT PRIVILEGES FOR ROLE "crm_owner" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "crm_anonymous";
-ALTER DEFAULT PRIVILEGES FOR ROLE "crm_owner" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "crm_user";
-ALTER DEFAULT PRIVILEGES FOR ROLE "crm_owner" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "crm_platform";
+ALTER DEFAULT PRIVILEGES FOR ROLE "crm_owner" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "crm_authenticated";
+ALTER DEFAULT PRIVILEGES FOR ROLE "crm_owner" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "crm_service";
 
 
 
@@ -4736,8 +4736,8 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "crm_owner" IN SCHEMA "public" GRANT ALL ON FU
 
 ALTER DEFAULT PRIVILEGES FOR ROLE "crm_owner" IN SCHEMA "public" GRANT ALL ON TABLES TO "crm_owner";
 ALTER DEFAULT PRIVILEGES FOR ROLE "crm_owner" IN SCHEMA "public" GRANT ALL ON TABLES TO "crm_anonymous";
-ALTER DEFAULT PRIVILEGES FOR ROLE "crm_owner" IN SCHEMA "public" GRANT ALL ON TABLES TO "crm_user";
-ALTER DEFAULT PRIVILEGES FOR ROLE "crm_owner" IN SCHEMA "public" GRANT ALL ON TABLES TO "crm_platform";
+ALTER DEFAULT PRIVILEGES FOR ROLE "crm_owner" IN SCHEMA "public" GRANT ALL ON TABLES TO "crm_authenticated";
+ALTER DEFAULT PRIVILEGES FOR ROLE "crm_owner" IN SCHEMA "public" GRANT ALL ON TABLES TO "crm_service";
 
 
 
@@ -4832,7 +4832,7 @@ on conflict (id) do nothing;
 -- Leitura por org (path {org_id}/...) OU plataforma (path platform/...) por qualquer
 -- usuário autenticado (assets de plataforma são públicos p/ tenants; conteúdo é curado).
 drop policy if exists "skill_assets_read" on object_storage.objects;
-create policy "skill_assets_read" on object_storage.objects for select to crm_user
+create policy "skill_assets_read" on object_storage.objects for select to crm_authenticated
   using (
     bucket_id = 'skill-assets'
     and (
@@ -5005,9 +5005,9 @@ end; $$;
 revoke all on function public.fn_upsert_wa_contact(uuid, text, text, text, text, text) from public;
 revoke all on function public.fn_upsert_wa_conversation(uuid, uuid, uuid) from public;
 revoke all on function public.fn_mark_conversation_message(uuid, text, text, timestamptz) from public;
-grant execute on function public.fn_upsert_wa_contact(uuid, text, text, text, text, text) to crm_platform;
-grant execute on function public.fn_upsert_wa_conversation(uuid, uuid, uuid) to crm_platform;
-grant execute on function public.fn_mark_conversation_message(uuid, text, text, timestamptz) to crm_platform;
+grant execute on function public.fn_upsert_wa_contact(uuid, text, text, text, text, text) to crm_service;
+grant execute on function public.fn_upsert_wa_conversation(uuid, uuid, uuid) to crm_service;
+grant execute on function public.fn_mark_conversation_message(uuid, text, text, timestamptz) to crm_service;
 
 -- ---- RLS por role em tabelas de config + viewer read-only (migration 0030) ----
 -- G2-03: spec 13 §4 — pipelines/stages (config) write manager+; conversations
@@ -5152,7 +5152,7 @@ $$;
 
 revoke all on function public.fn_conversation_assign(uuid, uuid, uuid, text, uuid, boolean) from public;
 grant execute on function public.fn_conversation_assign(uuid, uuid, uuid, text, uuid, boolean)
-  to crm_user, crm_platform;
+  to crm_authenticated, crm_service;
 
 -- ---- assignee_kind + guard de membership na fn_conversation_assign (migration 0032) ----
 -- G3-02 (gov-loop): IA como assignee de 1ª classe (spec 13 §3.2). Coluna
@@ -5226,7 +5226,7 @@ revoke all on function public.fn_member_role_in_org(uuid, uuid) from public;
 -- anônimo — enumeração de membership/role de qualquer tenant.
 revoke execute on function public.fn_member_role_in_org(uuid, uuid) from crm_anonymous;
 grant execute on function public.fn_member_role_in_org(uuid, uuid)
-  to crm_user, crm_platform;
+  to crm_authenticated, crm_service;
 
 create or replace function public.fn_conversation_assign(
   p_organization_id uuid,
@@ -5287,7 +5287,7 @@ $$;
 
 revoke all on function public.fn_conversation_assign(uuid, uuid, uuid, text, uuid, boolean) from public;
 grant execute on function public.fn_conversation_assign(uuid, uuid, uuid, text, uuid, boolean)
-  to crm_user, crm_platform;
+  to crm_authenticated, crm_service;
 
 
 -- ---- conversation tags (migration 0033) ----
@@ -5326,15 +5326,15 @@ revoke execute on function public.fn_mark_conversation_message(uuid, text, text,
 
 revoke execute on function public.emit_event(text, text, uuid, jsonb, jsonb, uuid) from public;
 revoke execute on function public.emit_event(text, text, uuid, jsonb, jsonb, uuid) from crm_anonymous;
-grant execute on function public.emit_event(text, text, uuid, jsonb, jsonb, uuid) to crm_user, crm_platform;
+grant execute on function public.emit_event(text, text, uuid, jsonb, jsonb, uuid) to crm_authenticated, crm_service;
 
 revoke execute on function public.fn_log_event(uuid, text, jsonb) from public;
 revoke execute on function public.fn_log_event(uuid, text, jsonb) from crm_anonymous;
-grant execute on function public.fn_log_event(uuid, text, jsonb) to crm_user, crm_platform;
+grant execute on function public.fn_log_event(uuid, text, jsonb) to crm_authenticated, crm_service;
 
 revoke execute on function public.fn_audit_log_row() from public;
 revoke execute on function public.fn_audit_log_row() from crm_anonymous;
-grant execute on function public.fn_audit_log_row() to crm_platform;
+grant execute on function public.fn_audit_log_row() to crm_service;
 
 
 -- ---- visibility_mode: RLS de conversas/mensagens por atendente (migration 0035) ----
@@ -5373,7 +5373,7 @@ $$;
 revoke all on function public.fn_can_view_conversation(uuid, uuid) from public;
 revoke execute on function public.fn_can_view_conversation(uuid, uuid) from crm_anonymous;
 grant execute on function public.fn_can_view_conversation(uuid, uuid)
-  to crm_user, crm_platform;
+  to crm_authenticated, crm_service;
 
 drop policy if exists "conversations_select" on public.conversations;
 create policy "conversations_select" on public.conversations
@@ -5516,7 +5516,7 @@ $$;
 revoke all on function public.fn_conversation_assign(uuid, uuid, uuid, text, uuid, boolean) from public;
 revoke execute on function public.fn_conversation_assign(uuid, uuid, uuid, text, uuid, boolean) from crm_anonymous;
 grant execute on function public.fn_conversation_assign(uuid, uuid, uuid, text, uuid, boolean)
-  to crm_user, crm_platform;
+  to crm_authenticated, crm_service;
 
 -- ---- visibility_mode: RLS de crm_leads (kanban) por atendente (migration 0036) ----
 -- G4-03 (gov-loop): eixo 5 (spec 13 §4 linha 220). Espelha a G4-01 (conversations,
@@ -5557,7 +5557,7 @@ $$;
 revoke all on function public.fn_can_view_lead(uuid, uuid) from public;
 revoke execute on function public.fn_can_view_lead(uuid, uuid) from crm_anonymous;
 grant execute on function public.fn_can_view_lead(uuid, uuid)
-  to crm_user, crm_platform;
+  to crm_authenticated, crm_service;
 
 drop policy if exists "tenant_isolation_crm_leads_all" on public.crm_leads;
 drop policy if exists "crm_leads_select" on public.crm_leads;
@@ -5720,7 +5720,7 @@ $$;
 revoke all on function public.fn_attendant_metrics(uuid, timestamptz, timestamptz, uuid) from public;
 revoke execute on function public.fn_attendant_metrics(uuid, timestamptz, timestamptz, uuid) from crm_anonymous;
 grant execute on function public.fn_attendant_metrics(uuid, timestamptz, timestamptz, uuid)
-  to crm_user, crm_platform;
+  to crm_authenticated, crm_service;
 
 
 -- ---- webhooks universais + motor de regras (migration 0038) ----
@@ -6056,8 +6056,8 @@ end$$;
 
 revoke all on function public.fn_encrypt_oauth(text) from public;
 revoke all on function public.fn_decrypt_oauth(bytea) from public;
-grant execute on function public.fn_encrypt_oauth(text) to crm_platform;
-grant execute on function public.fn_decrypt_oauth(bytea) to crm_platform;
+grant execute on function public.fn_encrypt_oauth(text) to crm_service;
+grant execute on function public.fn_decrypt_oauth(bytea) to crm_service;
 
 alter table public.webhook_sources
   add column if not exists secret_encrypted bytea;
@@ -6967,8 +6967,8 @@ begin
   perform public.fn_aplicar_travas_de_suporte();
 end $f$;
 
-revoke execute on function public.fn_proteger_tabelas_de_organizacao() from public, crm_anonymous, crm_user, crm_platform;
-revoke execute on function public.fn_proteger_modulo_provisionado() from public, crm_anonymous, crm_user, crm_platform;
+revoke execute on function public.fn_proteger_tabelas_de_organizacao() from public, crm_anonymous, crm_authenticated, crm_service;
+revoke execute on function public.fn_proteger_modulo_provisionado() from public, crm_anonymous, crm_authenticated, crm_service;
 
 
 -- A rotina da migration 0325 no lugar do laço enumerado: ela varre o catálogo
@@ -7315,7 +7315,7 @@ as $$
   )
   returning e.*;
 $$;
-revoke all on function fn_claim_due_followup_enrollments(int, int) from public, crm_anonymous, crm_user;
+revoke all on function fn_claim_due_followup_enrollments(int, int) from public, crm_anonymous, crm_authenticated;
 
 -- ---- followup version lineage + atomic publish (migration 0056) ----
 
@@ -7369,7 +7369,7 @@ begin
   return v_version_id;
 end;
 $$;
-revoke all on function fn_publish_followup_flow_version(uuid, uuid, jsonb, uuid) from public, crm_anonymous, crm_user;
+revoke all on function fn_publish_followup_flow_version(uuid, uuid, jsonb, uuid) from public, crm_anonymous, crm_authenticated;
 
 -- ---- agent_inbox_items: kind 'followup_dead' (migration 0057) ----
 
@@ -7738,10 +7738,10 @@ do $$ begin perform public.fn_proteger_tabelas_de_organizacao(); end $$;
 -- (organization_id null). Só SELECT; escrita de plataforma continua service-role.
 drop policy if exists catalog_read_skill_versions on skill_versions;
 create policy catalog_read_skill_versions on skill_versions for select
-  to crm_user using (organization_id is null);
+  to crm_authenticated using (organization_id is null);
 drop policy if exists catalog_read_skill_pointers on skill_pointers;
 create policy catalog_read_skill_pointers on skill_pointers for select
-  to crm_user using (organization_id is null);
+  to crm_authenticated using (organization_id is null);
 
 -- ---- seed de skills de plataforma: catálogo inicial do marketplace (migration 0069) ----
 -- 0069: seed de skills de plataforma (organization_id null) — catálogo inicial do
@@ -9789,7 +9789,7 @@ comment on function public.fn_agent_tool_usage(uuid, uuid, timestamptz) is
   'Uso das capacidades (tools MCP) de um agente: total, falhas, quantos vieram de execução de teste e a última vez. Elo audit<->run é api_audit_log.request_id = ai_agent_runs.id.';
 
 grant execute on function public.fn_agent_tool_usage(uuid, uuid, timestamptz)
-  to crm_user, crm_platform;
+  to crm_authenticated, crm_service;
 -- ---- retorno cancelado ≠ retorno disparado (migration 0102) ----------------
 -- `cron_jobs.enabled = false` significa DUAS coisas: o one-shot disparou ou
 -- alguém desmarcou. Enquanto forem a mesma linha no banco, o agente não sabe, ao
@@ -10184,29 +10184,29 @@ revoke execute on function public.fn_publish_ai_agent_version(uuid, uuid, uuid) 
 revoke execute on function public.fn_emit_conversation_routing() from public, crm_anonymous;
 
 -- ---- authenticated: definer volátil sem call site de sessão de usuário ----
-revoke execute on function public.fn_upsert_wa_contact(uuid, text, text, text, text, text) from crm_user;
-revoke execute on function public.fn_upsert_wa_conversation(uuid, uuid, uuid) from crm_user;
-revoke execute on function public.fn_mark_conversation_message(uuid, text, text, timestamptz) from crm_user;
-revoke execute on function public.fn_publish_ai_agent_version(uuid, uuid, uuid) from crm_user;
-revoke execute on function public.activate_kb_version(uuid, uuid) from crm_user;
+revoke execute on function public.fn_upsert_wa_contact(uuid, text, text, text, text, text) from crm_authenticated;
+revoke execute on function public.fn_upsert_wa_conversation(uuid, uuid, uuid) from crm_authenticated;
+revoke execute on function public.fn_mark_conversation_message(uuid, text, text, timestamptz) from crm_authenticated;
+revoke execute on function public.fn_publish_ai_agent_version(uuid, uuid, uuid) from crm_authenticated;
+revoke execute on function public.activate_kb_version(uuid, uuid) from crm_authenticated;
 -- Funções de TRIGGER: ninguém as chama por RPC, e o disparo do trigger não
 -- consulta EXECUTE. O grant só existia por herança dos padrões do Postgres.
-revoke execute on function public.fn_emit_conversation_routing() from crm_user;
+revoke execute on function public.fn_emit_conversation_routing() from crm_authenticated;
 
 -- ---- re-grant explícito: quem precisa continua podendo (probe positivo) ----
-grant execute on function public.fn_upsert_wa_contact(uuid, text, text, text, text, text) to crm_platform;
-grant execute on function public.fn_upsert_wa_conversation(uuid, uuid, uuid) to crm_platform;
-grant execute on function public.fn_mark_conversation_message(uuid, text, text, timestamptz) to crm_platform;
-grant execute on function public.fn_publish_ai_agent_version(uuid, uuid, uuid) to crm_platform;
-grant execute on function public.activate_kb_version(uuid, uuid) to crm_platform;
-grant execute on function public.fn_emit_conversation_routing() to crm_platform;
+grant execute on function public.fn_upsert_wa_contact(uuid, text, text, text, text, text) to crm_service;
+grant execute on function public.fn_upsert_wa_conversation(uuid, uuid, uuid) to crm_service;
+grant execute on function public.fn_mark_conversation_message(uuid, text, text, timestamptz) to crm_service;
+grant execute on function public.fn_publish_ai_agent_version(uuid, uuid, uuid) to crm_service;
+grant execute on function public.activate_kb_version(uuid, uuid) to crm_service;
+grant execute on function public.fn_emit_conversation_routing() to crm_service;
 -- Helpers de RLS: as policies são avaliadas com o papel de quem consulta, então
 -- `authenticated` PRECISA de EXECUTE — sem isto toda leitura logada quebra.
-grant execute on function public.fn_is_platform_admin() to crm_user, crm_platform;
-grant execute on function public.fn_user_org_ids() to crm_user, crm_platform;
-grant execute on function public.fn_user_role_in_org(uuid) to crm_user, crm_platform;
-grant execute on function public.fn_user_role_in(uuid) to crm_user, crm_platform;
-grant execute on function public.fn_role_at_least(uuid, text) to crm_user, crm_platform;
+grant execute on function public.fn_is_platform_admin() to crm_authenticated, crm_service;
+grant execute on function public.fn_user_org_ids() to crm_authenticated, crm_service;
+grant execute on function public.fn_user_role_in_org(uuid) to crm_authenticated, crm_service;
+grant execute on function public.fn_user_role_in(uuid) to crm_authenticated, crm_service;
+grant execute on function public.fn_role_at_least(uuid, text) to crm_authenticated, crm_service;
 
 -- ---- ai_invocations.agent_id aceita NULL (migration 0114) ----
 -- Issue #160 (@jmpo, medindo a própria VPS): o classificador de sentimento roda
@@ -10271,7 +10271,7 @@ $$;
 
 revoke all     on function public.fn_atrito_jaccard(text, text) from public;
 revoke execute on function public.fn_atrito_jaccard(text, text) from crm_anonymous;
-grant  execute on function public.fn_atrito_jaccard(text, text) to crm_user, crm_platform;
+grant  execute on function public.fn_atrito_jaccard(text, text) to crm_authenticated, crm_service;
 
 create table if not exists public.demandas (
   id uuid primary key default gen_random_uuid(),
@@ -10768,7 +10768,7 @@ $$;
 revoke all     on function public.fn_atrito_metrics(uuid, timestamptz, timestamptz, int, float8, int) from public;
 revoke execute on function public.fn_atrito_metrics(uuid, timestamptz, timestamptz, int, float8, int) from crm_anonymous;
 grant  execute on function public.fn_atrito_metrics(uuid, timestamptz, timestamptz, int, float8, int)
-  to crm_user, crm_platform;
+  to crm_authenticated, crm_service;
 
 
 
@@ -10825,7 +10825,7 @@ $$;
 -- organization_id vem SEMPRE de `new`, nunca de parâmetro — não há superfície
 -- para escolher org alheia.
 revoke all     on function public.fn_demanda_abre_no_inbound() from public;
-revoke execute on function public.fn_demanda_abre_no_inbound() from crm_anonymous, crm_user;
+revoke execute on function public.fn_demanda_abre_no_inbound() from crm_anonymous, crm_authenticated;
 
 drop trigger if exists trg_demanda_abre_no_inbound on public.messages;
 create trigger trg_demanda_abre_no_inbound
@@ -10876,7 +10876,7 @@ end;
 $$;
 
 revoke all     on function public.fn_demanda_fecha_com_conversa() from public;
-revoke execute on function public.fn_demanda_fecha_com_conversa() from crm_anonymous, crm_user;
+revoke execute on function public.fn_demanda_fecha_com_conversa() from crm_anonymous, crm_authenticated;
 
 drop trigger if exists trg_demanda_fecha_com_conversa on public.conversations;
 create trigger trg_demanda_fecha_com_conversa
@@ -11044,8 +11044,8 @@ end $$;
 -- Revogar de todas é seguro AQUI porque o único call site é o TRIGGER, e o
 -- Postgres não exige EXECUTE do usuário para invocar função de trigger. Nenhuma
 -- sessão chama esta função diretamente.
-revoke execute on function public.fn_liberar_leads_do_agente() from public, crm_anonymous, crm_user;
-grant  execute on function public.fn_liberar_leads_do_agente() to crm_platform;
+revoke execute on function public.fn_liberar_leads_do_agente() from public, crm_anonymous, crm_authenticated;
+grant  execute on function public.fn_liberar_leads_do_agente() to crm_service;
 
 drop trigger if exists trg_liberar_leads_do_agente on public.ai_agents;
 create trigger trg_liberar_leads_do_agente
@@ -11701,7 +11701,7 @@ end$$;
 
 revoke all on function public.fn_apaga_propostas_de_contato_anonimizado() from public;
 revoke execute on function public.fn_apaga_propostas_de_contato_anonimizado() from crm_anonymous;
-revoke execute on function public.fn_apaga_propostas_de_contato_anonimizado() from crm_user;
+revoke execute on function public.fn_apaga_propostas_de_contato_anonimizado() from crm_authenticated;
 
 drop trigger if exists trg_contacts_anonimizado_limpa_propostas on public.contacts;
 create trigger trg_contacts_anonimizado_limpa_propostas
@@ -11990,7 +11990,7 @@ as $$
   returning e.*;
 $$;
 
-revoke execute on function fn_claim_due_followup_enrollments(int, int) from public, crm_anonymous, crm_user;
+revoke execute on function fn_claim_due_followup_enrollments(int, int) from public, crm_anonymous, crm_authenticated;
 -- ---- o dossiê do follow-up: tempo escolhido pela IA + pausa manual (migration 0145) ----
 --
 -- Ver o cabeçalho de `supabase/migrations/20260810120000_0145_dossie_do_followup.sql`
@@ -12142,8 +12142,8 @@ comment on function public.fn_agora() is
 -- `revoke from public` não remove; e o grant a PUBLIC que o Postgres dá na
 -- criação, que `revoke from anon` não remove.
 revoke all     on function public.fn_agora() from public;
-revoke execute on function public.fn_agora() from crm_anonymous, crm_user;
-grant  execute on function public.fn_agora() to crm_platform;
+revoke execute on function public.fn_agora() from crm_anonymous, crm_authenticated;
+grant  execute on function public.fn_agora() to crm_service;
 
 -- ---- o caso anuncia abertura e fechamento no barramento (migration 0148) ----
 --
@@ -12202,7 +12202,7 @@ alter function public.fn_emit_agent_case_event() owner to crm_owner;
 -- `alter default privileges ... to anon` do baseline, que vale para toda função
 -- criada depois dele e que `revoke from public` não remove.
 revoke all     on function public.fn_emit_agent_case_event() from public;
-revoke execute on function public.fn_emit_agent_case_event() from crm_anonymous, crm_user;
+revoke execute on function public.fn_emit_agent_case_event() from crm_anonymous, crm_authenticated;
 
 -- ABERTURA: só os dois status que o código considera aberto
 -- (`OPEN_STATUSES` em lib/agent-engine/agent/human-cases.ts:75).
@@ -12338,10 +12338,10 @@ begin
 end $$;
 
 revoke execute on function public.emit_event(text, text, uuid, jsonb, jsonb, uuid) from public, crm_anonymous;
-grant  execute on function public.emit_event(text, text, uuid, jsonb, jsonb, uuid) to crm_user, crm_platform;
+grant  execute on function public.emit_event(text, text, uuid, jsonb, jsonb, uuid) to crm_authenticated, crm_service;
 
 revoke execute on function public.retrieve_top_k_chunks(uuid, uuid, public.vector, integer, real) from public, crm_anonymous;
-grant  execute on function public.retrieve_top_k_chunks(uuid, uuid, public.vector, integer, real) to crm_user, crm_platform;
+grant  execute on function public.retrieve_top_k_chunks(uuid, uuid, public.vector, integer, real) to crm_authenticated, crm_service;
 
 do $$
 declare
@@ -12565,12 +12565,12 @@ create policy tenant_isolation_ai_provider_credentials_write on public.ai_provid
 -- por controle positivo em tests/invariants/rbac-config-ia-canais.test.ts: a
 -- primeira versão desta migration revogava a tabela toda, e foi esse controle
 -- que reprovou.
-revoke select on public.ai_provider_credentials from crm_user, crm_anonymous;
+revoke select on public.ai_provider_credentials from crm_authenticated, crm_anonymous;
 grant select (
   id, organization_id, provider, label, api_key_last4, validated_at,
   validation_error, models_available, is_active, created_by, created_at, updated_at
-) on public.ai_provider_credentials to crm_user;
-grant select on public.ai_provider_credentials_safe to crm_user;
+) on public.ai_provider_credentials to crm_authenticated;
+grant select on public.ai_provider_credentials_safe to crm_authenticated;
 
 -- O PostgREST guarda o schema em cache; sem isto as policies novas só valem no
 -- próximo reload dele.
@@ -12702,11 +12702,11 @@ end$$;
 -- fechou. O invariante `hardening-definer-varredura` reprova definer volátil
 -- alcançável por `authenticated` fora da allowlist, e esta não entra nela.
 revoke execute on function public.fn_aplicar_quadro_do_onboarding(uuid, uuid, text, text, jsonb)
-  from public, crm_anonymous, crm_user;
+  from public, crm_anonymous, crm_authenticated;
 -- Só o service role: o único chamador é a Server Action do onboarding, que já
 -- resolveu a organização do cookie de sessão. Quem não precisa não recebe.
 grant execute on function public.fn_aplicar_quadro_do_onboarding(uuid, uuid, text, text, jsonb)
-  to crm_platform;
+  to crm_service;
 
 -- ---- marca por organização (migration 0157) ----
 --
@@ -12831,9 +12831,9 @@ comment on function public.fn_definir_marca_da_organizacao(uuid, uuid, jsonb) is
 -- `from authenticated` pelo motivo de (B) e mais um: esta função é VOLÁTIL.
 -- Definer volátil alcançável por qualquer usuário logado é escrita cross-tenant.
 revoke execute on function public.fn_definir_marca_da_organizacao(uuid, uuid, jsonb)
-  from public, crm_anonymous, crm_user;
+  from public, crm_anonymous, crm_authenticated;
 grant  execute on function public.fn_definir_marca_da_organizacao(uuid, uuid, jsonb)
-  to crm_platform;
+  to crm_service;
 
 notify pgrst, 'reload schema';
 
@@ -13044,14 +13044,14 @@ comment on function public.fn_definir_marca_da_organizacao(uuid, uuid, jsonb) is
 -- `from authenticated` pelo motivo de (B) e mais um: as duas são VOLÁTEIS.
 -- Definer volátil alcançável por qualquer usuário logado é escrita cross-tenant.
 revoke execute on function public.fn_definir_logo_da_organizacao(uuid, uuid, text)
-  from public, crm_anonymous, crm_user;
+  from public, crm_anonymous, crm_authenticated;
 grant  execute on function public.fn_definir_logo_da_organizacao(uuid, uuid, text)
-  to crm_platform;
+  to crm_service;
 
 revoke execute on function public.fn_definir_marca_da_organizacao(uuid, uuid, jsonb)
-  from public, crm_anonymous, crm_user;
+  from public, crm_anonymous, crm_authenticated;
 grant  execute on function public.fn_definir_marca_da_organizacao(uuid, uuid, jsonb)
-  to crm_platform;
+  to crm_service;
 
 notify pgrst, 'reload schema';
 
@@ -13115,9 +13115,9 @@ comment on function public.fn_gasto_de_ia_do_mes(uuid) is
   'Gasto de IA da organização no mês corrente, em centavos de DÓLAR (llm_calls.cost_cents vem de pricing.ts, que calcula em USD). É a ÚNICA definição de gasto do produto: o gate a chama dentro de SQL_ORCAMENTO (lib/agent-engine/edge/llm/orcamento.ts), a tela a chama por RPC e o painel de saúde por tenant a chama. O dashboard de plataforma (app/api/v1/admin/dashboard/kpis) AINDA lê ai_budgets.current_month_consumed_cents, um contador acumulado que nada zera, e por isso pode divergir — a divergência está declarada naquele arquivo e o alerta de lá nunca é critical. Query inline de sum(cost_cents) em outro lugar é uma segunda régua, e a segunda régua sempre diverge — vigiado por tests/unit/orcamento-uma-regua-de-gasto.test.ts. security invoker: recebe a organização por argumento e não valida membership, então definer aqui seria leitura cross-tenant.';
 
 revoke execute on function public.fn_gasto_de_ia_do_mes(uuid)
-  from public, crm_anonymous, crm_user;
+  from public, crm_anonymous, crm_authenticated;
 grant  execute on function public.fn_gasto_de_ia_do_mes(uuid)
-  to crm_platform;
+  to crm_service;
 
 notify pgrst, 'reload schema';
 
@@ -13252,10 +13252,10 @@ end;
 $$;
 
 comment on function public.fn_estampar_atribuicao_de_anuncio(uuid, uuid, text, jsonb) is
-  'Grava de qual anúncio (Meta Ads / Google Ads / site) um contato veio — só na primeira vez. `source_metadata = source_metadata || p_metadata` faz merge, nunca sobrescreve o que fn_upsert_wa_contact já gravou (waha_lid, waha_chat_id, notify_name). A guarda `source_metadata->>''ad_platform'' is null` é o primeiro-toque: clicar em outro anúncio meses depois, numa conversa já aberta, não reescreve de onde a pessoa veio originalmente — o UPDATE casa zero linhas, silenciosamente. `organization_id = p_org` (issue #1248): a organização é obrigatória e o contato de OUTRA organização casa zero linhas — escrita cross-tenant barrada no `where`, não no chamador. security definer + revoke de crm_anonymous/crm_user: só o backend (admin client no ingest de canal) chama isto.';
+  'Grava de qual anúncio (Meta Ads / Google Ads / site) um contato veio — só na primeira vez. `source_metadata = source_metadata || p_metadata` faz merge, nunca sobrescreve o que fn_upsert_wa_contact já gravou (waha_lid, waha_chat_id, notify_name). A guarda `source_metadata->>''ad_platform'' is null` é o primeiro-toque: clicar em outro anúncio meses depois, numa conversa já aberta, não reescreve de onde a pessoa veio originalmente — o UPDATE casa zero linhas, silenciosamente. `organization_id = p_org` (issue #1248): a organização é obrigatória e o contato de OUTRA organização casa zero linhas — escrita cross-tenant barrada no `where`, não no chamador. security definer + revoke de crm_anonymous/authenticated: só o backend (admin client no ingest de canal) chama isto.';
 
-revoke execute on function public.fn_estampar_atribuicao_de_anuncio(uuid, uuid, text, jsonb) from public, crm_anonymous, crm_user;
-grant  execute on function public.fn_estampar_atribuicao_de_anuncio(uuid, uuid, text, jsonb) to crm_platform;
+revoke execute on function public.fn_estampar_atribuicao_de_anuncio(uuid, uuid, text, jsonb) from public, crm_anonymous, crm_authenticated;
+grant  execute on function public.fn_estampar_atribuicao_de_anuncio(uuid, uuid, text, jsonb) to crm_service;
 
 notify pgrst, 'reload schema';
 
@@ -13386,14 +13386,14 @@ end;
 $$;
 
 revoke execute on function public.fn_podar_fila_de_jobs(int, int)
-  from public, crm_anonymous, crm_user;
+  from public, crm_anonymous, crm_authenticated;
 grant  execute on function public.fn_podar_fila_de_jobs(int, int)
-  to crm_platform;
+  to crm_service;
 
 revoke execute on function public.fn_expurgar_auditoria_vencida(int, int)
-  from public, crm_anonymous, crm_user;
+  from public, crm_anonymous, crm_authenticated;
 grant  execute on function public.fn_expurgar_auditoria_vencida(int, int)
-  to crm_platform;
+  to crm_service;
 
 comment on table public.api_audit_log is
   'L-10: append-only (sem GRANT de UPDATE/DELETE a ninguém). Retenção default 5 anos, '
@@ -13525,7 +13525,7 @@ $$;
 revoke all     on function public.fn_conversation_assign(uuid, uuid, uuid, text, uuid, boolean) from public;
 revoke execute on function public.fn_conversation_assign(uuid, uuid, uuid, text, uuid, boolean) from crm_anonymous;
 grant  execute on function public.fn_conversation_assign(uuid, uuid, uuid, text, uuid, boolean)
-  to crm_user, crm_platform;
+  to crm_authenticated, crm_service;
 
 -- ---- o histórico de atribuição herda o escopo da conversa (migration 0173) ----
 -- Medido: org em `visibility_mode='own'`, agent que não é dono → `select` em
@@ -13596,8 +13596,8 @@ begin
 end;
 $$;
 
-revoke execute on function public.fn_redigir_captacoes_do_contato_anonimizado() from public, crm_anonymous, crm_user;
-grant execute on function public.fn_redigir_captacoes_do_contato_anonimizado() to crm_platform;
+revoke execute on function public.fn_redigir_captacoes_do_contato_anonimizado() from public, crm_anonymous, crm_authenticated;
+grant execute on function public.fn_redigir_captacoes_do_contato_anonimizado() to crm_service;
 
 notify pgrst, 'reload schema';
 
@@ -14219,8 +14219,8 @@ $$;
 -- Função de trigger não exige EXECUTE de quem dispara o DELETE, então revogar
 -- das três origens não a quebra — e mantém a função fora da lista de exceções
 -- do invariante de hardening, que é congelada.
-revoke execute on function public.fn_limpar_vinculos_do_agendamento() from public, crm_anonymous, crm_user;
-grant  execute on function public.fn_limpar_vinculos_do_agendamento() to crm_platform;
+revoke execute on function public.fn_limpar_vinculos_do_agendamento() from public, crm_anonymous, crm_authenticated;
+grant  execute on function public.fn_limpar_vinculos_do_agendamento() to crm_service;
 
 -- ---- LGPD alcança a agenda: função (migration 0184) ----
 --
@@ -14263,8 +14263,8 @@ $$;
 -- Função de trigger não exige EXECUTE de quem dispara o UPDATE, então revogar
 -- das três origens não a quebra — e a mantém fora da lista de exceções do
 -- invariante de hardening, que é congelada.
-revoke execute on function public.fn_redigir_agenda_do_contato_anonimizado() from public, crm_anonymous, crm_user;
-grant  execute on function public.fn_redigir_agenda_do_contato_anonimizado() to crm_platform;
+revoke execute on function public.fn_redigir_agenda_do_contato_anonimizado() from public, crm_anonymous, crm_authenticated;
+grant  execute on function public.fn_redigir_agenda_do_contato_anonimizado() to crm_service;
 
 -- ---- a agenda nasce com o que marcar: funções (migration 0185) ----
 --
@@ -14324,10 +14324,10 @@ $$;
 
 -- Função de trigger não exige EXECUTE de quem dispara o INSERT, e a de seed é
 -- chamada por ela e pelo backfill — nenhum dos dois passa pelo PostgREST.
-revoke execute on function public.fn_semear_tipos_de_agendamento(uuid) from public, crm_anonymous, crm_user;
-revoke execute on function public.fn_semear_tipos_de_agendamento_na_org_nova() from public, crm_anonymous, crm_user;
-grant  execute on function public.fn_semear_tipos_de_agendamento(uuid) to crm_platform;
-grant  execute on function public.fn_semear_tipos_de_agendamento_na_org_nova() to crm_platform;
+revoke execute on function public.fn_semear_tipos_de_agendamento(uuid) from public, crm_anonymous, crm_authenticated;
+revoke execute on function public.fn_semear_tipos_de_agendamento_na_org_nova() from public, crm_anonymous, crm_authenticated;
+grant  execute on function public.fn_semear_tipos_de_agendamento(uuid) to crm_service;
+grant  execute on function public.fn_semear_tipos_de_agendamento_na_org_nova() to crm_service;
 
 -- ---- o espelho do Google é cache com prazo: função (migration 0187) ----
 --
@@ -14376,8 +14376,8 @@ begin
 end;
 $$;
 
-revoke execute on function public.fn_expurgar_espelho_da_agenda(int, int) from public, crm_anonymous, crm_user;
-grant  execute on function public.fn_expurgar_espelho_da_agenda(int, int) to crm_platform;
+revoke execute on function public.fn_expurgar_espelho_da_agenda(int, int) from public, crm_anonymous, crm_authenticated;
+grant  execute on function public.fn_expurgar_espelho_da_agenda(int, int) to crm_service;
 
 -- ---- mensagem editada e mensagem apagada (migration 0153) ----
 -- O cliente edita ou apaga no aplicativo e o CRM seguia mostrando a versão
@@ -14498,7 +14498,7 @@ create table if not exists public.platform_branding (
 );
 
 comment on table public.platform_branding is
-  'Marca da INSTALAÇÃO (login, e-mail, 500) — linha única id=1. Semeada do .env na primeira leitura; para NOME e LOGO o .env continua sendo a rede de segurança de rollback (o agent.sh reverte a imagem, não o banco). Para COR não há rede: APP_ACCENT_HEX nasceu junto com esta tabela e o install.sh não o grava — nenhuma versão que desconheça platform_branding pinta accent. Lida/escrita só server-side (crm_platform). Ver lib/branding/instalacao.ts.';
+  'Marca da INSTALAÇÃO (login, e-mail, 500) — linha única id=1. Semeada do .env na primeira leitura; para NOME e LOGO o .env continua sendo a rede de segurança de rollback (o agent.sh reverte a imagem, não o banco). Para COR não há rede: APP_ACCENT_HEX nasceu junto com esta tabela e o install.sh não o grava — nenhuma versão que desconheça platform_branding pinta accent. Lida/escrita só server-side (crm_service). Ver lib/branding/instalacao.ts.';
 
 comment on column public.platform_branding.seeded_from_env is
   'true = os valores vieram do .env e ninguém os editou pela tela. A escrita humana zera isto, e é o que impede a semeadura de reescrever o que uma pessoa apagou de propósito.';
@@ -14513,8 +14513,8 @@ alter table public.platform_branding enable row level security;
 
 -- ZERO POLICIES, DE PROPÓSITO — ver o bloco acima.
 
-revoke all on public.platform_branding from crm_anonymous, crm_user;
-grant select, insert, update on public.platform_branding to crm_platform;
+revoke all on public.platform_branding from crm_anonymous, crm_authenticated;
+grant select, insert, update on public.platform_branding to crm_service;
 
 drop trigger if exists trg_platform_branding_touch on public.platform_branding;
 create trigger trg_platform_branding_touch
@@ -14780,7 +14780,7 @@ notify pgrst, 'reload schema';
 -- SELECT fica: ler o próprio orçamento pelo PostgREST continua escopado pela
 -- policy de SELECT da 0150. `revoke` é idempotente por natureza — este bloco
 -- pode ser re-aplicado à vontade pelo `update.sh`.
-revoke insert, update, delete on table public.ai_budgets from crm_user, crm_anonymous;
+revoke insert, update, delete on table public.ai_budgets from crm_authenticated, crm_anonymous;
 
 -- ---- o arquivo do webhook pode perder o corpo (migration 0163) ----
 --
@@ -15032,7 +15032,7 @@ create policy push_subscriptions_own on public.push_subscriptions
   );
 
 revoke all on public.push_subscriptions from crm_anonymous, public;
-grant select, insert, update, delete on public.push_subscriptions to crm_user;
+grant select, insert, update, delete on public.push_subscriptions to crm_authenticated;
 
 comment on table public.push_subscriptions is
   'Inscrição Web Push por navegador. Envio é service role; a sessão só vê a própria linha.';
@@ -15574,7 +15574,7 @@ comment on table public.calendar_connections is
 comment on column public.calendar_connections.status is
   'connecting = o OAuth começou e ainda não voltou; healthy = renovando e sincronizando; token_expired = o refresh falhou com invalid_grant e SÓ a pessoa resolve, reconectando; scope_missing = conectou sem a permissão de calendário; rate_limited = o Google recusou por volume e vale tentar depois; disconnected = a pessoa desligou; error = falha que não se encaixa nas anteriores. Vocabulário idêntico ao de tenant_integrations.status — mesma pergunta, mesma palavra.';
 comment on column public.calendar_connections.oauth_access_token_encrypted is
-  'Cifrado por public.fn_encrypt_oauth (pgp_sym AES-256). NUNCA em claro. A chave vive em private.fn_oauth_key() e só crm_platform executa a decifragem.';
+  'Cifrado por public.fn_encrypt_oauth (pgp_sym AES-256). NUNCA em claro. A chave vive em private.fn_oauth_key() e só crm_service executa a decifragem.';
 comment on column public.calendar_connections.token_expires_at is
   'Quando o access_token vence (~1h no Google). É o que o worker de renovação varre. Sem esse worker a integração morre em uma hora — e é por isso que o índice calendar_connections_renovacao_idx existe desde o primeiro dia, e não depois.';
 
@@ -16185,7 +16185,7 @@ alter table public.calendar_oauth_nonces enable row level security;
 -- Sem policy nenhuma, e é deliberado: quem escreve é o callback do OAuth, com
 -- service role, e ninguém precisa LER isto pela API. Policy aqui só abriria
 -- caminho para enumerar tentativas de conexão pelo PostgREST.
-revoke all on public.calendar_oauth_nonces from crm_anonymous, crm_user;
+revoke all on public.calendar_oauth_nonces from crm_anonymous, crm_authenticated;
 
 -- Negação ESCRITA (migration 0192). RLS ligada sem policy já nega tudo, mas no
 -- catálogo negação deliberada e negação esquecida são indistinguíveis — e é
@@ -16256,8 +16256,8 @@ end$$;
 -- corpo deste arquivo — omissão que aparece como linha AUSENTE, não errada.
 -- O `drop function` logo acima, da 0364, derrubou a função COM os ACLs dela:
 -- este par é o que repõe o estado que a 0192 deixou, e não redundância com ela.
-revoke execute on function public.fn_expurgar_nonces_de_oauth(int, int) from public, crm_anonymous, crm_user;
-grant execute on function public.fn_expurgar_nonces_de_oauth(int, int) to crm_platform;
+revoke execute on function public.fn_expurgar_nonces_de_oauth(int, int) from public, crm_anonymous, crm_authenticated;
+grant execute on function public.fn_expurgar_nonces_de_oauth(int, int) to crm_service;
 -- ---- playbook `agendamento` v2: cita as ferramentas de agenda (migration 0191) ----
 do $pub$
 declare
@@ -16533,8 +16533,8 @@ begin
 end
 $fn$;
 
-revoke execute on function public.fn_adotar_tipos_de_agendamento_sem_dono() from public, crm_anonymous, crm_user;
-grant  execute on function public.fn_adotar_tipos_de_agendamento_sem_dono() to crm_platform;
+revoke execute on function public.fn_adotar_tipos_de_agendamento_sem_dono() from public, crm_anonymous, crm_authenticated;
+grant  execute on function public.fn_adotar_tipos_de_agendamento_sem_dono() to crm_service;
 
 drop trigger if exists trg_adotar_tipos_de_agendamento_sem_dono on public.user_organizations;
 create trigger trg_adotar_tipos_de_agendamento_sem_dono
@@ -16896,7 +16896,7 @@ comment on function public.fn_buscar_trechos_das_fontes(uuid, uuid[], public.vec
   'Top-K por similaridade de cosseno sobre os materiais que o agente pode ler (0181). SECURITY DEFINER + filtro programático de organização — quem chama valida o tenant.';
 
 revoke execute on function public.fn_buscar_trechos_das_fontes(uuid, uuid[], public.vector, integer, real, text) from public, crm_anonymous;
-grant  execute on function public.fn_buscar_trechos_das_fontes(uuid, uuid[], public.vector, integer, real, text) to crm_user, crm_platform;
+grant  execute on function public.fn_buscar_trechos_das_fontes(uuid, uuid[], public.vector, integer, real, text) to crm_authenticated, crm_service;
 
 -- `ai_models` não tinha NENHUM modelo de embedding, e é por isso que o painel de
 -- provedores não conseguia oferecer chave para `embedding_indexar` e
@@ -17095,8 +17095,8 @@ begin
 end
 $fn$;
 
-revoke execute on function public.fn_carimbar_ida_ao_google() from public, crm_anonymous, crm_user;
-grant  execute on function public.fn_carimbar_ida_ao_google() to crm_platform;
+revoke execute on function public.fn_carimbar_ida_ao_google() from public, crm_anonymous, crm_authenticated;
+grant  execute on function public.fn_carimbar_ida_ao_google() to crm_service;
 
 drop trigger if exists trg_calendar_appointments_carimbo_do_google on public.calendar_appointments;
 create trigger trg_calendar_appointments_carimbo_do_google
@@ -17138,14 +17138,14 @@ create table if not exists public.platform_google_oauth (
 );
 
 comment on table public.platform_google_oauth is
-  'O app OAuth do Google DESTA INSTALAÇÃO (singleton). Server-side only: RLS ligada sem policies e grants revogados de crm_anonymous/crm_user — o PostgREST não a serve. O segredo nunca volta ao browser; a tela devolve apenas se existe.';
+  'O app OAuth do Google DESTA INSTALAÇÃO (singleton). Server-side only: RLS ligada sem policies e grants revogados de crm_anonymous/crm_authenticated — o PostgREST não a serve. O segredo nunca volta ao browser; a tela devolve apenas se existe.';
 comment on column public.platform_google_oauth.client_secret_encrypted is
   'Cifrado por fn_encrypt_oauth (pgp_sym_encrypt/aes256), a mesma cifra dos tokens em calendar_connections. Nunca gravar em claro: sem a chave mestra o save recusa.';
 
 alter table public.platform_google_oauth enable row level security;
 
-revoke all on public.platform_google_oauth from crm_anonymous, crm_user;
-grant select, insert, update on public.platform_google_oauth to crm_platform;
+revoke all on public.platform_google_oauth from crm_anonymous, crm_authenticated;
+grant select, insert, update on public.platform_google_oauth to crm_service;
 
 drop trigger if exists trg_platform_google_oauth_updated_at on public.platform_google_oauth;
 create trigger trg_platform_google_oauth_updated_at
@@ -17258,7 +17258,7 @@ $$;
 revoke all     on function public.fn_conversation_assign(uuid, uuid, uuid, text, uuid, boolean) from public;
 revoke execute on function public.fn_conversation_assign(uuid, uuid, uuid, text, uuid, boolean) from crm_anonymous;
 grant  execute on function public.fn_conversation_assign(uuid, uuid, uuid, text, uuid, boolean)
-  to crm_user, crm_platform;
+  to crm_authenticated, crm_service;
 
 -- ---- o banco passa a saber quem manda na conversa (migration 0203) ----
 --
@@ -17369,8 +17369,8 @@ comment on function public.comando_da_conversa(public.conversations)
 -- sem tocar em tabela, continua invoker.)
 revoke execute on function public.fn_comando_da_conversa(text, uuid, timestamptz, boolean, boolean, timestamptz) from public, crm_anonymous;
 revoke execute on function public.comando_da_conversa(public.conversations) from public, crm_anonymous;
-grant  execute on function public.fn_comando_da_conversa(text, uuid, timestamptz, boolean, boolean, timestamptz) to crm_user, crm_platform;
-grant  execute on function public.comando_da_conversa(public.conversations) to crm_user, crm_platform;
+grant  execute on function public.fn_comando_da_conversa(text, uuid, timestamptz, boolean, boolean, timestamptz) to crm_authenticated, crm_service;
+grant  execute on function public.comando_da_conversa(public.conversations) to crm_authenticated, crm_service;
 
 -- Sem isto o campo existe no banco e o PostgREST segue servindo o schema velho:
 -- `?comando_da_conversa=...` volta 400 e a Inbox inteira fica vazia até alguém
@@ -17472,8 +17472,8 @@ create policy catalog_products_write on public.catalog_products
 -- TODA tabela criada depois dele — inclusive esta. Sem o revoke, o catálogo
 -- inteiro fica legível pela anon key, que vai para o browser.
 revoke all on public.catalog_products from crm_anonymous;
-grant select, insert, update, delete on public.catalog_products to crm_user;
-grant all on public.catalog_products to crm_platform;
+grant select, insert, update, delete on public.catalog_products to crm_authenticated;
+grant all on public.catalog_products to crm_service;
 
 drop trigger if exists trg_catalog_products_updated_at on public.catalog_products;
 create trigger trg_catalog_products_updated_at
@@ -17651,9 +17651,9 @@ end;
 $$;
 
 revoke execute on function public.fn_configurar_pre_go_live_canal(uuid, uuid, text, text[])
-  from public, crm_anonymous, crm_user;
+  from public, crm_anonymous, crm_authenticated;
 grant execute on function public.fn_configurar_pre_go_live_canal(uuid, uuid, text, text[])
-  to crm_platform;
+  to crm_service;
 
 notify pgrst, 'reload schema';
 
@@ -17743,7 +17743,7 @@ comment on function public.fn_mover_leads_em_lote(uuid, uuid[], uuid, text) is
 revoke all     on function public.fn_mover_leads_em_lote(uuid, uuid[], uuid, text) from public;
 revoke execute on function public.fn_mover_leads_em_lote(uuid, uuid[], uuid, text) from crm_anonymous;
 grant  execute on function public.fn_mover_leads_em_lote(uuid, uuid[], uuid, text)
-  to crm_user, crm_platform;
+  to crm_authenticated, crm_service;
 -- ---- juntar contatos duplicados (migration 0215) ----
 -- Apêndice DERIVADO do arquivo da migration, não copiado à mão: o corpo abaixo é
 -- `supabase/migrations/20260904190000_0215_juntar_contatos_duplicados.sql` na
@@ -18068,7 +18068,7 @@ $$;
 -- PRIVILEGES ... TO anon` do baseline e o grant a PUBLIC que o Postgres dá a
 -- toda função). Revogar só uma deixa a RPC alcançável pela anon key do browser.
 revoke execute on function public.fn_mesclar_contatos(uuid, uuid, uuid[]) from public, crm_anonymous;
-grant execute on function public.fn_mesclar_contatos(uuid, uuid, uuid[]) to crm_user, crm_platform;
+grant execute on function public.fn_mesclar_contatos(uuid, uuid, uuid[]) to crm_authenticated, crm_service;
 
 notify pgrst, 'reload schema';
 -- ---- tarefas do CRM (migration 0210) ----
@@ -18149,8 +18149,8 @@ create policy crm_tasks_write on public.crm_tasks
 -- TODA tabela criada depois dele — inclusive esta. Sem o revoke, as tarefas da
 -- organização ficam legíveis pela anon key, que vai para o browser.
 revoke all on public.crm_tasks from crm_anonymous;
-grant select, insert, update, delete on public.crm_tasks to crm_user;
-grant all on public.crm_tasks to crm_platform;
+grant select, insert, update, delete on public.crm_tasks to crm_authenticated;
+grant all on public.crm_tasks to crm_service;
 
 drop trigger if exists trg_crm_tasks_updated_at on public.crm_tasks;
 create trigger trg_crm_tasks_updated_at
@@ -18205,8 +18205,8 @@ $$;
 -- Função de trigger não exige EXECUTE de quem dispara o UPDATE, então revogar
 -- das três origens não a quebra — e a mantém fora da lista de exceções do
 -- invariante de hardening, que é congelada.
-revoke execute on function public.fn_redigir_tarefas_do_contato_anonimizado() from public, crm_anonymous, crm_user;
-grant  execute on function public.fn_redigir_tarefas_do_contato_anonimizado() to crm_platform;
+revoke execute on function public.fn_redigir_tarefas_do_contato_anonimizado() from public, crm_anonymous, crm_authenticated;
+grant  execute on function public.fn_redigir_tarefas_do_contato_anonimizado() to crm_service;
 
 drop trigger if exists trg_redigir_tarefas_ao_anonimizar on public.contacts;
 create trigger trg_redigir_tarefas_ao_anonimizar
@@ -18360,7 +18360,7 @@ $$;
 revoke all on function public.fn_activity_report(uuid, timestamptz, timestamptz, text, int) from public;
 revoke execute on function public.fn_activity_report(uuid, timestamptz, timestamptz, text, int) from crm_anonymous;
 grant execute on function public.fn_activity_report(uuid, timestamptz, timestamptz, text, int)
-  to crm_user, crm_platform;
+  to crm_authenticated, crm_service;
 -- ---- campos personalizados do contato, e a anonimização que os alcança (migration 0211) ----
 -- 0211 — campos personalizados no CONTATO, e a anonimização que os alcança.
 --
@@ -18433,7 +18433,7 @@ end$$;
 -- não remove um grant nominal a `anon`.
 revoke all on function public.fn_contato_anonimizado_limpa_campos_personalizados() from public;
 revoke execute on function public.fn_contato_anonimizado_limpa_campos_personalizados() from crm_anonymous;
-revoke execute on function public.fn_contato_anonimizado_limpa_campos_personalizados() from crm_user;
+revoke execute on function public.fn_contato_anonimizado_limpa_campos_personalizados() from crm_authenticated;
 
 drop trigger if exists trg_contacts_anonimizado_limpa_custom_fields on public.contacts;
 create trigger trg_contacts_anonimizado_limpa_custom_fields
@@ -18481,8 +18481,8 @@ begin
       decode(p_hash, 'hex'), 201, result);
   return result || jsonb_build_object('created', true);
 end $$;
-revoke all on function public.fn_create_tenant_with_owner(uuid, uuid, jsonb, text) from public, crm_anonymous, crm_user;
-grant execute on function public.fn_create_tenant_with_owner(uuid, uuid, jsonb, text) to crm_platform;
+revoke all on function public.fn_create_tenant_with_owner(uuid, uuid, jsonb, text) from public, crm_anonymous, crm_authenticated;
+grant execute on function public.fn_create_tenant_with_owner(uuid, uuid, jsonb, text) to crm_service;
 
 -- O token HMAC/e-mail são verificados no servidor. Serialização impede duas
 -- aceitações concorrentes de reescrever o vínculo. Replay ativo não muda nada;
@@ -18519,8 +18519,8 @@ begin
   end if;
   return jsonb_build_object('id', m.id, 'changed', true);
 end $$;
-revoke all on function public.fn_accept_team_invite(uuid, uuid, text, uuid, timestamptz, timestamptz) from public, crm_anonymous, crm_user;
-grant execute on function public.fn_accept_team_invite(uuid, uuid, text, uuid, timestamptz, timestamptz) to crm_platform;
+revoke all on function public.fn_accept_team_invite(uuid, uuid, text, uuid, timestamptz, timestamptz) from public, crm_anonymous, crm_authenticated;
+grant execute on function public.fn_accept_team_invite(uuid, uuid, text, uuid, timestamptz, timestamptz) to crm_service;
 
 -- ---- Recibo de criação confiável (migration 0219) ----
 -- Recibo que será autoridade de assinatura não pode ser escrito por membro.
@@ -18530,11 +18530,11 @@ grant execute on function public.fn_accept_team_invite(uuid, uuid, text, uuid, t
 alter table public.idempotency_keys add column if not exists tenant_creation_trusted boolean not null default false;
 drop policy if exists idempotency_platform_creation_server_only on public.idempotency_keys;
 create policy idempotency_platform_creation_server_only on public.idempotency_keys
-  as restrictive for all to crm_anonymous, crm_user
+  as restrictive for all to crm_anonymous, crm_authenticated
   using (endpoint not like '/api/v1/admin/tenants:%' and not tenant_creation_trusted)
   with check (endpoint not like '/api/v1/admin/tenants:%' and not tenant_creation_trusted);
 -- TRUNCATE ignora RLS; nenhum consumidor de idempotência precisa dele.
-revoke truncate on public.idempotency_keys from public, crm_anonymous, crm_user;
+revoke truncate on public.idempotency_keys from public, crm_anonymous, crm_authenticated;
 
 -- Criação administrativa atômica; chave existente com endpoint por ator, sem tokens.
 -- Apenas service_role: identidade/plataforma/MFA são verificadas pelo handler.
@@ -18577,8 +18577,8 @@ begin
       decode(p_hash, 'hex'), 201, result, true);
   return result || jsonb_build_object('created', true);
 end $$;
-revoke all on function public.fn_create_tenant_with_owner(uuid, uuid, jsonb, text) from public, crm_anonymous, crm_user;
-grant execute on function public.fn_create_tenant_with_owner(uuid, uuid, jsonb, text) to crm_platform;
+revoke all on function public.fn_create_tenant_with_owner(uuid, uuid, jsonb, text) from public, crm_anonymous, crm_authenticated;
+grant execute on function public.fn_create_tenant_with_owner(uuid, uuid, jsonb, text) to crm_service;
 
 
 -- ---- Suporte temporário por sessão (migration 0220) ----
@@ -18601,8 +18601,8 @@ alter table public.platform_support_sessions drop constraint if exists platform_
 create unique index if not exists platform_support_sessions_open_session
  on public.platform_support_sessions(auth_session_id) where ended_at is null;
 alter table public.platform_support_sessions enable row level security;
-revoke all on public.platform_support_sessions from public, crm_anonymous, crm_user;
-grant select, insert, update, delete on public.platform_support_sessions to crm_platform;
+revoke all on public.platform_support_sessions from public, crm_anonymous, crm_authenticated;
+grant select, insert, update, delete on public.platform_support_sessions to crm_service;
 
 create or replace function public.fn_support_context()
 returns jsonb language sql stable security definer set search_path = public as $f$
@@ -18627,7 +18627,7 @@ returns jsonb language sql stable security definer set search_path = public as $
  limit 1;
 $f$;
 revoke all on function public.fn_support_context() from public, crm_anonymous;
-grant execute on function public.fn_support_context() to crm_user, crm_platform;
+grant execute on function public.fn_support_context() to crm_authenticated, crm_service;
 
 create or replace function public.fn_support_write_allowed(p_org uuid)
 returns boolean language sql stable security definer set search_path = public as $f$
@@ -18636,7 +18636,7 @@ returns boolean language sql stable security definer set search_path = public as
  from (select public.fn_support_context() s) c where s is not null),true);
 $f$;
 revoke all on function public.fn_support_write_allowed(uuid) from public, crm_anonymous;
-grant execute on function public.fn_support_write_allowed(uuid) to crm_user, crm_platform;
+grant execute on function public.fn_support_write_allowed(uuid) to crm_authenticated, crm_service;
 
 create or replace function public.fn_user_org_ids()
 returns setof uuid language sql stable security definer set search_path = public as $f$
@@ -18680,8 +18680,8 @@ begin
  where actor_user_id=p_actor and auth_session_id=p_session and ended_at is null returning * into v_row;
  return to_jsonb(v_row);
 end $f$;
-revoke all on function public.fn_start_support(uuid,uuid,uuid,uuid,text,integer), public.fn_end_support(uuid,uuid) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_start_support(uuid,uuid,uuid,uuid,text,integer), public.fn_end_support(uuid,uuid) to crm_platform;
+revoke all on function public.fn_start_support(uuid,uuid,uuid,uuid,text,integer), public.fn_end_support(uuid,uuid) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_start_support(uuid,uuid,uuid,uuid,text,integer), public.fn_end_support(uuid,uuid) to crm_service;
 
 -- As políticas restritivas `support_write_{insert,update,delete}` das tabelas de
 -- `public` (restritiva derrota as permissivas OR plataforma, inclusive membership
@@ -19088,15 +19088,15 @@ returns boolean language sql stable security definer set search_path = public as
  then public.fn_support_write_allowed(split_part(p_name,'/',1)::uuid) else true end;
 $f$;
 revoke all on function public.fn_support_storage_write_allowed(text) from public,crm_anonymous;
-grant execute on function public.fn_support_storage_write_allowed(text) to crm_user,crm_platform;
+grant execute on function public.fn_support_storage_write_allowed(text) to crm_authenticated,crm_service;
 do $f$ begin
  if to_regclass('object_storage.objects') is not null then
  execute 'drop policy if exists support_write_insert on object_storage.objects';
- execute 'create policy support_write_insert on object_storage.objects as restrictive for insert to crm_user with check (public.fn_support_storage_write_allowed(name))';
+ execute 'create policy support_write_insert on object_storage.objects as restrictive for insert to crm_authenticated with check (public.fn_support_storage_write_allowed(name))';
  execute 'drop policy if exists support_write_update on object_storage.objects';
- execute 'create policy support_write_update on object_storage.objects as restrictive for update to crm_user using (public.fn_support_storage_write_allowed(name)) with check (public.fn_support_storage_write_allowed(name))';
+ execute 'create policy support_write_update on object_storage.objects as restrictive for update to crm_authenticated using (public.fn_support_storage_write_allowed(name)) with check (public.fn_support_storage_write_allowed(name))';
  execute 'drop policy if exists support_write_delete on object_storage.objects';
- execute 'create policy support_write_delete on object_storage.objects as restrictive for delete to crm_user using (public.fn_support_storage_write_allowed(name))';
+ execute 'create policy support_write_delete on object_storage.objects as restrictive for delete to crm_authenticated using (public.fn_support_storage_write_allowed(name))';
  end if;
 end $f$;
 notify pgrst, 'reload schema';
@@ -19117,8 +19117,8 @@ returns boolean language sql stable security definer set search_path=public as $
  or a.id is null or (a.not_after is not null and a.not_after<=now()) or o.status<>'active'
  or ((p.mfa_required or exists(select 1 from identity.mfa_factors f where f.user_id=s.actor_user_id and f.status='verified')) and coalesce(a.aal::text,'aal1')<>'aal2')));
 $f$;
-revoke all on function public.fn_support_callback_write_allowed(uuid,uuid,uuid) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_support_callback_write_allowed(uuid,uuid,uuid) to crm_platform;
+revoke all on function public.fn_support_callback_write_allowed(uuid,uuid,uuid) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_support_callback_write_allowed(uuid,uuid,uuid) to crm_service;
 
 
 -- ---- Interface por vínculo (0221) ----
@@ -19190,8 +19190,8 @@ begin
   return jsonb_build_object('id', m.id, 'changed', true);
 end $$;
 
-revoke all on function public.fn_accept_team_invite(uuid, uuid, text, uuid, timestamptz, timestamptz, jsonb) from public, crm_anonymous, crm_user;
-grant execute on function public.fn_accept_team_invite(uuid, uuid, text, uuid, timestamptz, timestamptz, jsonb) to crm_platform;
+revoke all on function public.fn_accept_team_invite(uuid, uuid, text, uuid, timestamptz, timestamptz, jsonb) from public, crm_anonymous, crm_authenticated;
+grant execute on function public.fn_accept_team_invite(uuid, uuid, text, uuid, timestamptz, timestamptz, jsonb) to crm_service;
 
 create or replace function public.fn_accept_team_invite(
  p_user uuid, p_org uuid, p_role text, p_invited_by uuid,
@@ -19199,8 +19199,8 @@ create or replace function public.fn_accept_team_invite(
 ) returns jsonb language sql security definer set search_path = public, pg_temp as $$
  select public.fn_accept_team_invite(p_user,p_org,p_role,p_invited_by,p_issued_at,p_invited_at,'{"preset":"completa"}'::jsonb);
 $$;
-revoke all on function public.fn_accept_team_invite(uuid,uuid,text,uuid,timestamptz,timestamptz) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_accept_team_invite(uuid,uuid,text,uuid,timestamptz,timestamptz) to crm_platform;
+revoke all on function public.fn_accept_team_invite(uuid,uuid,text,uuid,timestamptz,timestamptz) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_accept_team_invite(uuid,uuid,text,uuid,timestamptz,timestamptz) to crm_service;
 
 -- Recibos confiáveis e fingerprint do request inteiro preservados.
 create or replace function public.fn_create_tenant_with_owner(
@@ -19254,8 +19254,8 @@ begin
   return result || jsonb_build_object('created', true);
 end $$;
 
-revoke all on function public.fn_create_tenant_with_owner(uuid, uuid, jsonb, text) from public, crm_anonymous, crm_user;
-grant execute on function public.fn_create_tenant_with_owner(uuid, uuid, jsonb, text) to crm_platform;
+revoke all on function public.fn_create_tenant_with_owner(uuid, uuid, jsonb, text) from public, crm_anonymous, crm_authenticated;
+grant execute on function public.fn_create_tenant_with_owner(uuid, uuid, jsonb, text) to crm_service;
 
 
 notify pgrst, 'reload schema';
@@ -19289,8 +19289,8 @@ create or replace function public.fn_service_lock(p_org uuid, p_contact uuid)
 returns void language sql set search_path = public as $$
  select pg_advisory_xact_lock(hashtextextended(p_org::text || ':' || p_contact::text, 222));
 $$;
-revoke execute on function public.fn_service_lock(uuid,uuid) from public, crm_anonymous, crm_user;
-grant execute on function public.fn_service_lock(uuid,uuid) to crm_platform;
+revoke execute on function public.fn_service_lock(uuid,uuid) from public, crm_anonymous, crm_authenticated;
+grant execute on function public.fn_service_lock(uuid,uuid) to crm_service;
 
 -- Canônica: só recebe ID de mensagem persistida. Tenant/FKs são reconferidos.
 create or replace function public.fn_service_inbound(p_message uuid)
@@ -19343,13 +19343,13 @@ begin
  update public.messages set service_revision=c.service_revision,demanda_id=d.id,demanda_revision=d.revision
   where id=m.id and organization_id=c.organization_id;
 end; $$;
-revoke execute on function public.fn_service_inbound(uuid) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_service_inbound(uuid) to crm_platform;
+revoke execute on function public.fn_service_inbound(uuid) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_service_inbound(uuid) to crm_service;
 
 create or replace function public.fn_demanda_abre_no_inbound()
 returns trigger language plpgsql security definer set search_path=public as $$
 begin perform public.fn_service_inbound(new.id); return new; end; $$;
-revoke execute on function public.fn_demanda_abre_no_inbound() from public,crm_anonymous,crm_user;
+revoke execute on function public.fn_demanda_abre_no_inbound() from public,crm_anonymous,crm_authenticated;
 
 -- Comando de status compartilhado pelas duas portas API. Só service_role; o
 -- handler verifica RBAC/escopo antes da chamada. CAS nunca regrava um desfecho.
@@ -19381,8 +19381,8 @@ begin
  end if;
  return c;
 end; $$;
-revoke execute on function public.fn_service_status(uuid,uuid,text,bigint) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_service_status(uuid,uuid,text,bigint) to crm_platform;
+revoke execute on function public.fn_service_status(uuid,uuid,text,bigint) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_service_status(uuid,uuid,text,bigint) to crm_service;
 
 create or replace function public.fn_demanda_encerrar(p_org uuid,p_demanda uuid,p_expected bigint,p_desfecho text,p_actor uuid)
 returns public.demandas language plpgsql security definer set search_path=public as $$
@@ -19406,8 +19406,8 @@ begin
  from public.crm_leads l where l.organization_id=p_org and l.contact_id=d.contact_id;
  return d;
 end; $$;
-revoke execute on function public.fn_demanda_encerrar(uuid,uuid,bigint,text,uuid) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_demanda_encerrar(uuid,uuid,bigint,text,uuid) to crm_platform;
+revoke execute on function public.fn_demanda_encerrar(uuid,uuid,bigint,text,uuid) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_demanda_encerrar(uuid,uuid,bigint,text,uuid) to crm_service;
 notify pgrst,'reload schema';
 
 -- Só origem demonstrável. Cron legado/job antigo fica sem provenance e o
@@ -19434,7 +19434,7 @@ begin
  new.payload := (new.payload - 'service_boundary') || jsonb_build_object('service_boundary',b);
  return new;
 end; $$;
-revoke execute on function public.fn_job_service_boundary() from public,crm_anonymous,crm_user;
+revoke execute on function public.fn_job_service_boundary() from public,crm_anonymous,crm_authenticated;
 drop trigger if exists trg_job_service_boundary on public.job_queue;
 create trigger trg_job_service_boundary before insert on public.job_queue for each row execute function public.fn_job_service_boundary();
 
@@ -19460,7 +19460,7 @@ begin
  end if;
  return new;
 end; $$;
-revoke execute on function public.fn_service_stamp_status() from public,crm_anonymous,crm_user;
+revoke execute on function public.fn_service_stamp_status() from public,crm_anonymous,crm_authenticated;
 drop trigger if exists trg_service_stamp_status on public.conversations;
 create trigger trg_service_stamp_status before update of status on public.conversations
  for each row execute function public.fn_service_stamp_status();
@@ -19478,7 +19478,7 @@ begin
  new.context_snapshot:=coalesce(new.context_snapshot,'{}'::jsonb)||jsonb_build_object('service_boundary',coalesce(new.context_snapshot->'service_boundary',b));
  return new;
 end; $$;
-revoke execute on function public.fn_case_service_boundary() from public,crm_anonymous,crm_user;
+revoke execute on function public.fn_case_service_boundary() from public,crm_anonymous,crm_authenticated;
 drop trigger if exists trg_case_service_boundary on public.agent_cases;
 create trigger trg_case_service_boundary before insert on public.agent_cases for each row execute function public.fn_case_service_boundary();
 
@@ -19505,8 +19505,8 @@ begin
  update public.contacts set last_activity_at=greatest(last_activity_at,p_at)
  where id=c.contact_id and organization_id=c.organization_id;
 end; $$;
-revoke execute on function public.fn_mark_conversation_message(uuid,text,text,timestamptz) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_mark_conversation_message(uuid,text,text,timestamptz) to crm_platform;
+revoke execute on function public.fn_mark_conversation_message(uuid,text,text,timestamptz) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_mark_conversation_message(uuid,text,text,timestamptz) to crm_service;
 
 -- Reentrada em fila tem consumidor real em lib/routing/worker.ts. Só a
 -- transição terminal->fila emite; atribuições subsequentes não produzem eco.
@@ -19524,7 +19524,7 @@ begin
  end if;
  return new;
 end; $$;
-revoke execute on function public.fn_demanda_revision() from public,crm_anonymous,crm_user;
+revoke execute on function public.fn_demanda_revision() from public,crm_anonymous,crm_authenticated;
 drop trigger if exists trg_demanda_revision on public.demandas;
 create trigger trg_demanda_revision before update on public.demandas for each row execute function public.fn_demanda_revision();
 
@@ -19543,8 +19543,8 @@ begin
   'service_revision',c.service_revision,'demanda_id',d.id,'demanda_revision',d.revision,
   'status',c.status,'demanda_fechada_em',d.fechada_em,'service_started_at',c.service_started_at);
 end; $$;
-revoke execute on function public.fn_service_boundary(uuid,uuid) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_service_boundary(uuid,uuid) to crm_platform;
+revoke execute on function public.fn_service_boundary(uuid,uuid) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_service_boundary(uuid,uuid) to crm_service;
 
 -- Nova iniciativa autorizada (humano/MCP/regra), chamada NA ORIGEM, nunca no
 -- firing. Uma conversa sem demanda é legítima; não inventa assunto do cliente.
@@ -19589,8 +19589,8 @@ begin
   values(p_org,p_contact,sid,'open',false,'whatsapp',clock_timestamp()) returning * into c;
  return public.fn_service_boundary(p_org,c.id);
 end; $$;
-revoke execute on function public.fn_service_begin(uuid,uuid,uuid,jsonb) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_service_begin(uuid,uuid,uuid,jsonb) to crm_platform;
+revoke execute on function public.fn_service_begin(uuid,uuid,uuid,jsonb) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_service_begin(uuid,uuid,uuid,jsonb) to crm_service;
 
 alter table public.followup_enrollments add column if not exists service_boundary jsonb;
 
@@ -19603,7 +19603,7 @@ begin
  if new.direction='inbound' and new.contact_id is not null then perform public.fn_service_lock(new.organization_id,new.contact_id); end if;
  return new;
 end; $$;
-revoke execute on function public.fn_message_service_lock() from public,crm_anonymous,crm_user;
+revoke execute on function public.fn_message_service_lock() from public,crm_anonymous,crm_authenticated;
 drop trigger if exists trg_message_service_lock on public.messages;
 create trigger trg_message_service_lock before insert on public.messages for each row execute function public.fn_message_service_lock();
 
@@ -19906,8 +19906,8 @@ begin
  if cid is null then return jsonb_build_object('absent',true,'organization_id',p_org,'contact_id',p_contact); end if;
  return public.fn_service_boundary(p_org,cid);
 end; $$;
-revoke execute on function public.fn_service_observe(uuid,uuid) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_service_observe(uuid,uuid) to crm_platform;
+revoke execute on function public.fn_service_observe(uuid,uuid) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_service_observe(uuid,uuid) to crm_service;
 
 -- ---- Backfill de continuidade da fronteira (migration 0222) ----
 -- As colunas acima nascem NULAS, e o consumidor lê AUSÊNCIA DE CARIMBO como
@@ -20089,8 +20089,8 @@ create table if not exists public.event_service_origins (
  primary key(event_id,channel_session_id)
 );
 alter table public.event_service_origins enable row level security;
-revoke all on public.event_service_origins from public,crm_anonymous,crm_user,crm_platform;
-grant select on public.event_service_origins to crm_platform;
+revoke all on public.event_service_origins from public,crm_anonymous,crm_authenticated,crm_service;
+grant select on public.event_service_origins to crm_service;
 
 CREATE OR REPLACE FUNCTION public.emit_event(p_event_type text, p_entity_kind text, p_entity_id uuid, p_payload jsonb DEFAULT '{}'::jsonb, p_metadata jsonb DEFAULT '{}'::jsonb, p_organization_id uuid DEFAULT NULL::uuid)
  RETURNS uuid
@@ -20163,8 +20163,8 @@ returns jsonb language sql stable security definer set search_path=public as $$
  'default_session_id',(select sid from destinations order by (cid is not null) desc,last_message_at desc nulls last,conversation_created desc nulls last,(status='WORKING') desc,session_created limit 1),
  'destinations',coalesce((select jsonb_agg(snapshot) from destinations),'[]'::jsonb));
 $$;
-revoke all on function public.fn_service_observe_command(uuid,uuid) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_service_observe_command(uuid,uuid) to crm_platform;
+revoke all on function public.fn_service_observe_command(uuid,uuid) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_service_observe_command(uuid,uuid) to crm_service;
 
 create or replace function public.fn_service_event_origin(p_org uuid,p_event uuid,p_contact uuid,p_session uuid default null)
 returns jsonb language plpgsql security definer set search_path=public as $$
@@ -20262,8 +20262,8 @@ begin
  on conflict(event_id,channel_session_id) do nothing;
  return boundary;
 end; $$;
-revoke all on function public.fn_service_event_origin(uuid,uuid,uuid,uuid) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_service_event_origin(uuid,uuid,uuid,uuid) to crm_platform;
+revoke all on function public.fn_service_event_origin(uuid,uuid,uuid,uuid) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_service_event_origin(uuid,uuid,uuid,uuid) to crm_service;
 
 -- ---- Presença e recuperação (migration 0224) ----
 -- 0224 — Presença é declaração humana; o relógio só pede confirmação.
@@ -20296,8 +20296,8 @@ create table if not exists public.appointment_recovery_receipts (
  primary key(organization_id,appointment_id,appointment_revision)
 );
 alter table public.appointment_recovery_receipts enable row level security;
-revoke all on public.appointment_recovery_receipts from public,crm_anonymous,crm_user,crm_platform;
-grant select on public.appointment_recovery_receipts to crm_platform;
+revoke all on public.appointment_recovery_receipts from public,crm_anonymous,crm_authenticated,crm_service;
+grant select on public.appointment_recovery_receipts to crm_service;
 
 -- Um aviso por revisão, inclusive depois de resolvido. Identidade não depende
 -- de SELECT seguido de INSERT, nem da duração de um lease do cron.
@@ -20351,7 +20351,7 @@ begin
  end if;
  return new;
 end; $$;
-revoke all on function public.fn_appointment_stamp() from public,crm_anonymous,crm_user;
+revoke all on function public.fn_appointment_stamp() from public,crm_anonymous,crm_authenticated;
 drop trigger if exists trg_appointment_stamp on public.calendar_appointments;
 create trigger trg_appointment_stamp before insert or update on public.calendar_appointments for each row execute function public.fn_appointment_stamp();
 
@@ -20394,8 +20394,8 @@ begin
  end if;
  return to_jsonb(a);
 end; $$;
-revoke all on function public.fn_appointment_change(uuid,uuid,bigint,jsonb) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_appointment_change(uuid,uuid,bigint,jsonb) to crm_user,crm_platform;
+revoke all on function public.fn_appointment_change(uuid,uuid,bigint,jsonb) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_appointment_change(uuid,uuid,bigint,jsonb) to crm_authenticated,crm_service;
 
 -- Certificação ocorre sob o mutex ANTES dos locks de mensagens/FKs (Task4).
 -- A ordem é a do lock, não created_at (now() mede início da transação).
@@ -20421,7 +20421,7 @@ begin
  end if;
  return new;
 end; $$;
-revoke all on function public.fn_appointment_inbound() from public,crm_anonymous,crm_user;
+revoke all on function public.fn_appointment_inbound() from public,crm_anonymous,crm_authenticated;
 drop trigger if exists trg_appointment_inbound on public.messages;
 create trigger trg_appointment_inbound after update of service_revision on public.messages for each row execute function public.fn_appointment_inbound();
 
@@ -20451,7 +20451,7 @@ begin
  end if;
  new.revision:=old.revision+1; return new;
 end; $$;
-revoke all on function public.fn_followup_revision() from public,crm_anonymous,crm_user;
+revoke all on function public.fn_followup_revision() from public,crm_anonymous,crm_authenticated;
 drop trigger if exists trg_followup_revision on public.followup_enrollments;
 create trigger trg_followup_revision before update on public.followup_enrollments for each row execute function public.fn_followup_revision();
 
@@ -20472,8 +20472,8 @@ begin
  return case p_key when 'confirmation_delay_minutes' then delay when 'unknown_protection_minutes' then horizon else p_default end;
 end;
 $$;
-revoke all on function public.fn_agenda_minutes(jsonb,text,int) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_agenda_minutes(jsonb,text,int) to crm_platform;
+revoke all on function public.fn_agenda_minutes(jsonb,text,int) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_agenda_minutes(jsonb,text,int) to crm_service;
 
 create or replace function public.fn_appointment_confirmation_sweep(p_limit int default 100,p_now timestamptz default now())
 returns int language plpgsql security definer set search_path=public as $$
@@ -20498,8 +20498,8 @@ begin
  end loop;
  return n;
 end; $$;
-revoke all on function public.fn_appointment_confirmation_sweep(int,timestamptz) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_appointment_confirmation_sweep(int,timestamptz) to crm_platform;
+revoke all on function public.fn_appointment_confirmation_sweep(int,timestamptz) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_appointment_confirmation_sweep(int,timestamptz) to crm_service;
 
 -- Um único comando escolhe (ou recusa) o fluxo, guarda o recibo e inscreve.
 create or replace function public.fn_appointment_recover(p_org uuid,p_event uuid)
@@ -20567,8 +20567,8 @@ begin
  end if;
  return to_jsonb(r);
 end; $$;
-revoke all on function public.fn_appointment_recover(uuid,uuid) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_appointment_recover(uuid,uuid) to crm_platform;
+revoke all on function public.fn_appointment_recover(uuid,uuid) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_appointment_recover(uuid,uuid) to crm_service;
 
 create or replace function public.fn_agenda_settings(p_org uuid,p_config jsonb)
 returns jsonb language plpgsql security definer set search_path=public as $$
@@ -20585,8 +20585,8 @@ begin
  if not found then raise exception 'organization_not_found' using errcode='P0002'; end if;
  return p_config;
 end; $$;
-revoke all on function public.fn_agenda_settings(uuid,jsonb) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_agenda_settings(uuid,jsonb) to crm_user;
+revoke all on function public.fn_agenda_settings(uuid,jsonb) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_agenda_settings(uuid,jsonb) to crm_authenticated;
 
 create or replace function public.fn_appointment_enrollment_current(p_org uuid,p_id uuid,p_node text default null)
 returns boolean language sql stable security definer set search_path=public as $$
@@ -20597,8 +20597,8 @@ returns boolean language sql stable security definer set search_path=public as $
     and a.outcome_recorded_at is not null and a.contact_id=e.contact_id
     and exists(select 1 from public.appointment_recovery_receipts r where r.organization_id=p_org and r.appointment_id=a.id and r.appointment_revision=a.revision and r.result='started' and r.invalidated_at is null))));
 $$;
-revoke all on function public.fn_appointment_enrollment_current(uuid,uuid,text) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_appointment_enrollment_current(uuid,uuid,text) to crm_platform;
+revoke all on function public.fn_appointment_enrollment_current(uuid,uuid,text) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_appointment_enrollment_current(uuid,uuid,text) to crm_service;
 
 -- DIRC: geração já existe na chave nó:steps do evento de enqueue. Rechecks
 -- incrementam steps_taken, portanto igualdade com o contador atual seria falsa.
@@ -20623,7 +20623,7 @@ begin
  if tg_op='DELETE' then return old; end if;
  return new;
 end; $$;
-revoke all on function public.fn_followup_generation_write() from public,crm_anonymous,crm_user;
+revoke all on function public.fn_followup_generation_write() from public,crm_anonymous,crm_authenticated;
 drop trigger if exists trg_followup_generation_job on public.job_queue;
 create trigger trg_followup_generation_job before insert or update or delete on public.job_queue for each row execute function public.fn_followup_generation_write();
 drop trigger if exists trg_followup_generation_event on public.followup_enrollment_events;
@@ -20646,8 +20646,8 @@ returns boolean language sql stable security definer set search_path=public as $
      and substring(later.idempotency_key from ':([0-9]+)$')::numeric > substring(origin.idempotency_key from ':([0-9]+)$')::numeric
      and not (later.node_id=p_node and later.event_type='action_recheck')));
 $$;
-revoke all on function public.fn_followup_job_current(uuid,uuid,uuid,text) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_followup_job_current(uuid,uuid,uuid,text) to crm_platform;
+revoke all on function public.fn_followup_job_current(uuid,uuid,uuid,text) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_followup_job_current(uuid,uuid,uuid,text) to crm_service;
 
 -- Identidade ORIGINAL da aquisição. locked_at::text sai do claim PG sem perda
 -- dos microssegundos; heartbeat não altera locked_at. Reclaim do mesmo worker
@@ -20657,8 +20657,8 @@ returns boolean language sql stable security definer set search_path=public as $
  select exists(select 1 from public.job_queue where organization_id=p_org and id=p_job
   and kind='followup_turn' and status='running' and locked_by=p_worker and locked_at=p_acquired_at);
 $$;
-revoke all on function public.fn_followup_claim_current(uuid,uuid,text,timestamptz) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_followup_claim_current(uuid,uuid,text,timestamptz) to crm_platform;
+revoke all on function public.fn_followup_claim_current(uuid,uuid,text,timestamptz) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_followup_claim_current(uuid,uuid,text,timestamptz) to crm_service;
 
 -- CAS de todo update tardio: estado, nó e lease compartilham a revisão.
 create or replace function public.fn_followup_patch(p_org uuid,p_id uuid,p_revision bigint,p_patch jsonb)
@@ -20678,8 +20678,8 @@ begin
  where organization_id=p_org and id=p_id returning revision into p_revision;
  return p_revision;
 end; $$;
-revoke all on function public.fn_followup_patch(uuid,uuid,bigint,jsonb) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_followup_patch(uuid,uuid,bigint,jsonb) to crm_platform;
+revoke all on function public.fn_followup_patch(uuid,uuid,bigint,jsonb) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_followup_patch(uuid,uuid,bigint,jsonb) to crm_service;
 
 -- Estende o produtor permitido mantendo a origem imutável da 0223.
 CREATE OR REPLACE FUNCTION public.emit_event(p_event_type text, p_entity_kind text, p_entity_id uuid, p_payload jsonb DEFAULT '{}'::jsonb, p_metadata jsonb DEFAULT '{}'::jsonb, p_organization_id uuid DEFAULT NULL::uuid)
@@ -20869,8 +20869,8 @@ begin
  on conflict(event_id,channel_session_id) do nothing;
  return boundary;
 end; $$;
-revoke all on function public.fn_service_event_origin(uuid,uuid,uuid,uuid) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_service_event_origin(uuid,uuid,uuid,uuid) to crm_platform;
+revoke all on function public.fn_service_event_origin(uuid,uuid,uuid,uuid) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_service_event_origin(uuid,uuid,uuid,uuid) to crm_service;
 
 
 drop function if exists public.fn_followup_inline_settle(uuid,uuid,text,boolean,text,timestamptz,boolean);
@@ -20892,8 +20892,8 @@ begin
  end if;
  return true;
 end; $$;
-revoke all on function public.fn_followup_inline_settle(uuid,uuid,text,boolean,text,timestamptz,boolean,timestamptz) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_followup_inline_settle(uuid,uuid,text,boolean,text,timestamptz,boolean,timestamptz) to crm_platform;
+revoke all on function public.fn_followup_inline_settle(uuid,uuid,text,boolean,text,timestamptz,boolean,timestamptz) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_followup_inline_settle(uuid,uuid,text,boolean,text,timestamptz,boolean,timestamptz) to crm_service;
 
 
 -- Callback grava o passo e sua progressão juntos. Um CAS recusado não deixa
@@ -20916,8 +20916,8 @@ begin
   values(p_org,p_id,p_event->>'node_id',p_event->>'event_type',coalesce(p_event->'payload','{}'::jsonb),p_event->>'idempotency_key');
  return revision;
 end; $$;
-revoke all on function public.fn_followup_apply_step(uuid,uuid,bigint,jsonb,jsonb) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_followup_apply_step(uuid,uuid,bigint,jsonb,jsonb) to crm_platform;
+revoke all on function public.fn_followup_apply_step(uuid,uuid,bigint,jsonb,jsonb) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_followup_apply_step(uuid,uuid,bigint,jsonb,jsonb) to crm_service;
 
 notify pgrst,'reload schema';
 
@@ -21066,7 +21066,7 @@ begin
  if changed then new.google_next_attempt_at:=now(); end if;
  return new;
 end;$$;
-revoke all on function public.fn_google_projection_stamp() from public,crm_anonymous,crm_user;
+revoke all on function public.fn_google_projection_stamp() from public,crm_anonymous,crm_authenticated;
 drop trigger if exists trg_google_projection_stamp on public.calendar_appointments;
 create trigger trg_google_projection_stamp before insert or update on public.calendar_appointments for each row execute function public.fn_google_projection_stamp();
 
@@ -21110,13 +21110,13 @@ begin
  end if;
  return to_jsonb(a);
 end; $$;
-revoke all on function public.fn_appointment_change_core(uuid,uuid,bigint,jsonb,boolean,jsonb) from public,crm_anonymous,crm_user;
+revoke all on function public.fn_appointment_change_core(uuid,uuid,bigint,jsonb,boolean,jsonb) from public,crm_anonymous,crm_authenticated;
 create or replace function public.fn_appointment_change(p_org uuid,p_id uuid,p_revision bigint,p_patch jsonb)
 returns jsonb language sql security definer set search_path=public as $$
  select public.fn_appointment_change_core(p_org,p_id,p_revision,p_patch,false,null);
 $$;
 revoke all on function public.fn_appointment_change(uuid,uuid,bigint,jsonb) from public,crm_anonymous;
-grant execute on function public.fn_appointment_change(uuid,uuid,bigint,jsonb) to crm_user,crm_platform;
+grant execute on function public.fn_appointment_change(uuid,uuid,bigint,jsonb) to crm_authenticated,crm_service;
 
 -- Helpers de fencing só internos. Epoch identifica aquisição; geração pertence
 -- ao ciclo de paginação e não muda durante heartbeat/reclaim.
@@ -21131,7 +21131,7 @@ begin
  if not exists(select 1 from public.calendar_connections x join public.user_organizations m on m.organization_id=x.organization_id and m.user_id=x.user_id
   where x.organization_id=p_org and x.id=c.connection_id and m.revoked_at is null and x.status='healthy') then raise exception 'google_connection_unavailable' using errcode='42501';end if;
 end;$$;
-revoke all on function public.fn_google_calendar_fence(uuid,uuid,jsonb,jsonb) from public,crm_anonymous,crm_user;
+revoke all on function public.fn_google_calendar_fence(uuid,uuid,jsonb,jsonb) from public,crm_anonymous,crm_authenticated;
 
 create or replace function public.fn_google_appointment(p_org uuid,p_id uuid,p_action text,p_args jsonb default '{}')
 returns jsonb language plpgsql security definer set search_path=public as $$
@@ -21232,8 +21232,8 @@ begin
  return to_jsonb(a)||jsonb_build_object('revision',a.revision::text,'google_local_revision',a.google_local_revision::text,
   'google_synced_local_revision',a.google_synced_local_revision::text,'claim',jsonb_build_object('token',a.google_claim_token,'epoch',a.google_claim_epoch::text,'lease_until',a.google_claim_until));
 end;$$;
-revoke all on function public.fn_google_appointment(uuid,uuid,text,jsonb) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_google_appointment(uuid,uuid,text,jsonb) to crm_platform;
+revoke all on function public.fn_google_appointment(uuid,uuid,text,jsonb) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_google_appointment(uuid,uuid,text,jsonb) to crm_service;
 
 create or replace function public.fn_google_calendar(p_org uuid,p_id uuid,p_action text,p_args jsonb default '{}')
 returns jsonb language plpgsql security definer set search_path=public as $$
@@ -21300,8 +21300,8 @@ begin
  end if;
  return to_jsonb(c)||jsonb_build_object('claim',jsonb_build_object('token',c.sync_claim_token,'epoch',c.sync_claim_epoch::text,'lease_until',c.sync_claim_until));
 end;$$;
-revoke all on function public.fn_google_calendar(uuid,uuid,text,jsonb) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_google_calendar(uuid,uuid,text,jsonb) to crm_platform;
+revoke all on function public.fn_google_calendar(uuid,uuid,text,jsonb) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_google_calendar(uuid,uuid,text,jsonb) to crm_service;
 
 -- Catálogo completo: ausências somente depois de todas as páginas recebidas.
 -- Uma mesma membership cerca seleção, catálogo e primeira reserva.
@@ -21331,8 +21331,8 @@ begin
  end if;
  update public.calendar_connections set calendar_selection_revision=calendar_selection_revision+1 where organization_id=p_org and id=p_connection;
 end;$$;
-revoke all on function public.fn_google_catalog(uuid,uuid,jsonb,text) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_google_catalog(uuid,uuid,jsonb,text) to crm_platform;
+revoke all on function public.fn_google_catalog(uuid,uuid,jsonb,text) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_google_catalog(uuid,uuid,jsonb,text) to crm_service;
 
 create or replace function public.fn_google_selection(p_org uuid,p_revisions jsonb,p_sources uuid[],p_destination uuid)
 returns void language plpgsql security definer set search_path=public as $$
@@ -21353,7 +21353,7 @@ begin
  update public.calendar_connections set calendar_selection_revision=calendar_selection_revision+1 where organization_id=p_org and user_id=actor and provider='google_calendar';
 end;$$;
 revoke all on function public.fn_google_selection(uuid,jsonb,uuid[],uuid) from public,crm_anonymous;
-grant execute on function public.fn_google_selection(uuid,jsonb,uuid[],uuid) to crm_user;
+grant execute on function public.fn_google_selection(uuid,jsonb,uuid[],uuid) to crm_authenticated;
 
 -- Leitura derivada: seleção vale nos três leitores, mesmo com cache antigo.
 create or replace function public.fn_google_counts_for_conflicts(p_org uuid,p_connection uuid,p_calendar text)
@@ -21371,7 +21371,7 @@ returns boolean language sql stable security definer set search_path=public as $
   select 1 from public.calendar_connection_calendars where organization_id=p_org and connection_id=p_connection and external_calendar_id=p_calendar and not counts_for_conflicts);
 $$;
 revoke all on function public.fn_google_counts_for_conflicts(uuid,uuid,text) from public,crm_anonymous;
-grant execute on function public.fn_google_counts_for_conflicts(uuid,uuid,text) to crm_user,crm_platform;
+grant execute on function public.fn_google_counts_for_conflicts(uuid,uuid,text) to crm_authenticated,crm_service;
 -- A view nasceu como `select e.*` — com o `title` dentro —, e a lista EXPLÍCITA
 -- abaixo é o conserto da 0261: o membro lê a ocupação do colega, não o texto do
 -- compromisso pessoal dele. `e.*` é como a próxima coluna do espelho nasceria
@@ -21420,7 +21420,7 @@ create or replace view public.calendar_selected_external_events with (security_i
  from public.calendar_external_events e where e.status<>'cancelled'
  and public.fn_google_counts_for_conflicts(e.organization_id,e.connection_id,e.external_calendar_id);
 revoke all on public.calendar_selected_external_events from public,crm_anonymous;
-grant select on public.calendar_selected_external_events to crm_user,crm_platform;
+grant select on public.calendar_selected_external_events to crm_authenticated,crm_service;
 
 -- Anonimização e commit disputam a MESMA linha de appointment. Quem chegar
 -- depois vê redação ou tem o resultado apagado; não reidrata snapshot tardio.
@@ -21434,7 +21434,7 @@ begin
    where organization_id=new.organization_id and contact_id=new.id;
  end if;return new;
 end;$$;
-revoke all on function public.fn_google_redact_contact() from public,crm_anonymous,crm_user;
+revoke all on function public.fn_google_redact_contact() from public,crm_anonymous,crm_authenticated;
 drop trigger if exists trg_google_redact_contact on public.contacts;
 create trigger trg_google_redact_contact after update of is_anonymized on public.contacts for each row when(new.is_anonymized is true) execute function public.fn_google_redact_contact();
 -- Backlog sem consumer não era entrega. A revisão durável é a única pendência.
@@ -21465,7 +21465,7 @@ begin
  end if;
 end;$$;
 revoke all on function public.fn_google_resolve(uuid,uuid,text,text,text,text) from public,crm_anonymous;
-grant execute on function public.fn_google_resolve(uuid,uuid,text,text,text,text) to crm_user;
+grant execute on function public.fn_google_resolve(uuid,uuid,text,text,text,text) to crm_authenticated;
 
 notify pgrst,'reload schema';
 
@@ -21478,7 +21478,7 @@ returns boolean language sql stable security definer set search_path=public as $
    or (k.sync_coverage->>'window_start')::timestamptz>p_start or (k.sync_coverage->>'window_end')::timestamptz<p_end)) end;
 $$;
 revoke all on function public.fn_google_coverage(uuid,uuid,timestamptz,timestamptz) from public,crm_anonymous;
-grant execute on function public.fn_google_coverage(uuid,uuid,timestamptz,timestamptz) to crm_user,crm_platform;
+grant execute on function public.fn_google_coverage(uuid,uuid,timestamptz,timestamptz) to crm_authenticated,crm_service;
 notify pgrst,'reload schema';
 
 -- Elegibilidade derivada do titular canônico, ANTES do limite do cron.
@@ -21486,8 +21486,8 @@ notify pgrst,'reload schema';
 create or replace view public.calendar_google_reconcilable_appointments with (security_invoker=true) as
  select a.* from public.calendar_appointments a where not exists(
   select 1 from public.contacts c where c.organization_id=a.organization_id and c.id=a.contact_id and c.is_anonymized);
-revoke all on public.calendar_google_reconcilable_appointments from public,crm_anonymous,crm_user;
-grant select on public.calendar_google_reconcilable_appointments to crm_platform;
+revoke all on public.calendar_google_reconcilable_appointments from public,crm_anonymous,crm_authenticated;
+grant select on public.calendar_google_reconcilable_appointments to crm_service;
 notify pgrst,'reload schema';
 
 -- ---- fim Google 0225 ----
@@ -21521,8 +21521,8 @@ returns boolean language sql stable security definer set search_path=public as $
    and d.revision::text is not distinct from b->>'demanda_revision' and d.fechada_em is null and not c.is_group
    and c.status not in ('closed','resolved','archived')),false);
 $$;
-revoke all on function public.fn_meet_boundary_current(jsonb) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_meet_boundary_current(jsonb) to crm_platform;
+revoke all on function public.fn_meet_boundary_current(jsonb) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_meet_boundary_current(jsonb) to crm_service;
 
 -- INVOKER: distingue escrita direta authenticated de chamadas pelas RPCs definer
 -- que reconferem ator/claim. Não usa flag/GUC fornecida pelo cliente como bypass.
@@ -21530,7 +21530,7 @@ create or replace function public.fn_meet_stamp()
 returns trigger language plpgsql set search_path=public as $$
 declare redacted boolean; j public.job_queue; b jsonb;
 begin
- if current_user in ('crm_user','crm_anonymous') then
+ if current_user in ('crm_authenticated','crm_anonymous') then
   if tg_op='INSERT' then
    if new.meeting_delivery<>'{"state":"none"}'::jsonb or new.meeting_request_id is not null or new.meeting_url is not null or new.meeting_state<>'not_requested' or new.meeting_requested_at is not null or new.meeting_received_at is not null or new.meeting_ready_at is not null or new.meeting_attempts<>0 or new.meeting_last_error is not null or new.meeting_next_attempt_at is not null or new.meeting_delivery_job_id is not null then raise exception 'meet_metadata_private' using errcode='42501';end if;
   elsif row(new.meeting_state,new.meeting_request_id,new.meeting_requested_at,new.meeting_received_at,new.meeting_ready_at,new.meeting_attempts,new.meeting_last_error,new.meeting_next_attempt_at,new.meeting_delivery,new.meeting_delivery_job_id,new.meeting_url)
@@ -21563,7 +21563,7 @@ begin
  if new.meeting_state='pending' and new.meeting_next_attempt_at is not null then new.google_next_attempt_at:=least(new.google_next_attempt_at,new.meeting_next_attempt_at);end if;
  return new;
 end;$$;
-revoke all on function public.fn_meet_stamp() from public,crm_anonymous,crm_user;
+revoke all on function public.fn_meet_stamp() from public,crm_anonymous,crm_authenticated;
 drop trigger if exists trg_zz_meet_stamp on public.calendar_appointments;
 create trigger trg_zz_meet_stamp before insert or update on public.calendar_appointments for each row execute function public.fn_meet_stamp();
 
@@ -21588,8 +21588,8 @@ begin
   google_etag=coalesce(r->>'etag',google_etag)
  where organization_id=p_org and id=p_id;
 end;$$;
-revoke all on function public.fn_meet_observe(uuid,uuid,jsonb) from public,crm_anonymous,crm_user;
-revoke all on function public.fn_meet_observe(uuid,uuid,jsonb) from crm_platform;
+revoke all on function public.fn_meet_observe(uuid,uuid,jsonb) from public,crm_anonymous,crm_authenticated;
+revoke all on function public.fn_meet_observe(uuid,uuid,jsonb) from crm_service;
 
 create or replace function public.fn_google_appointment(p_org uuid,p_id uuid,p_action text,p_args jsonb default '{}')
 returns jsonb language plpgsql security definer set search_path=public as $$
@@ -21698,8 +21698,8 @@ begin
  return to_jsonb(a)||jsonb_build_object('revision',a.revision::text,'google_local_revision',a.google_local_revision::text,
   'google_synced_local_revision',a.google_synced_local_revision::text,'meeting_allowed_types',(select allowed_conference_types from public.calendar_connection_calendars where organization_id=p_org and connection_id=a.google_connection_id and external_calendar_id=a.google_calendar_id),'claim',jsonb_build_object('token',a.google_claim_token,'epoch',a.google_claim_epoch::text,'lease_until',a.google_claim_until));
 end;$$;
-revoke all on function public.fn_google_appointment(uuid,uuid,text,jsonb) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_google_appointment(uuid,uuid,text,jsonb) to crm_platform;
+revoke all on function public.fn_google_appointment(uuid,uuid,text,jsonb) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_google_appointment(uuid,uuid,text,jsonb) to crm_service;
 
 create or replace function public.fn_google_catalog(p_org uuid,p_connection uuid,p_items jsonb,p_revision text)
 returns void language plpgsql security definer set search_path=public as $$
@@ -21727,8 +21727,8 @@ begin
  end if;
  update public.calendar_connections set calendar_selection_revision=calendar_selection_revision+1 where organization_id=p_org and id=p_connection;
 end;$$;
-revoke all on function public.fn_google_catalog(uuid,uuid,jsonb,text) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_google_catalog(uuid,uuid,jsonb,text) to crm_platform;
+revoke all on function public.fn_google_catalog(uuid,uuid,jsonb,text) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_google_catalog(uuid,uuid,jsonb,text) to crm_service;
 
 
 create or replace function public.fn_meet_notice(p_org uuid,p_id uuid,p_reason text)
@@ -21741,8 +21741,8 @@ begin
  on conflict(organization_id,ref_id,appointment_revision,kind) where ref_kind='appointment' and appointment_revision is not null
  do update set status='open',resolved_at=null,body=excluded.body;
 end;$$;
-revoke all on function public.fn_meet_notice(uuid,uuid,text) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_meet_notice(uuid,uuid,text) to crm_platform;
+revoke all on function public.fn_meet_notice(uuid,uuid,text) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_meet_notice(uuid,uuid,text) to crm_service;
 
 create or replace function public.fn_meet_delivery_enqueue()
 returns trigger language plpgsql security definer set search_path=public as $$
@@ -21776,7 +21776,7 @@ begin
   where organization_id=new.organization_id and id=new.id;
  return new;
 end;$$;
-revoke all on function public.fn_meet_delivery_enqueue() from public,crm_anonymous,crm_user;
+revoke all on function public.fn_meet_delivery_enqueue() from public,crm_anonymous,crm_authenticated;
 drop trigger if exists trg_meet_delivery_enqueue on public.calendar_appointments;
 create trigger trg_meet_delivery_enqueue after insert or update on public.calendar_appointments for each row execute function public.fn_meet_delivery_enqueue();
 
@@ -21799,8 +21799,8 @@ returns boolean language sql stable security definer set search_path=public as $
        or (coalesce(o.settings->>'visibility_mode','own_and_unassigned')='own_and_unassigned' and v.assigned_to_user_id is null)))))
    and a.meeting_delivery->'service_boundary'=j.payload->'service_boundary' and public.fn_meet_boundary_current(j.payload->'service_boundary'));
 $$;
-revoke all on function public.fn_meet_delivery_current(uuid,uuid,text,timestamptz) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_meet_delivery_current(uuid,uuid,text,timestamptz) to crm_platform;
+revoke all on function public.fn_meet_delivery_current(uuid,uuid,text,timestamptz) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_meet_delivery_current(uuid,uuid,text,timestamptz) to crm_service;
 
 -- Política privada: sempre relida por aquisição original, inclusive no sink.
 -- A origem humana vem somente do recibo protegido, nunca de payload do caller.
@@ -21821,8 +21821,8 @@ begin
  return jsonb_build_object('current',true,'contact_id',r.contact_id,'channel_session_id',r.channel_session_id,'human_command',r.meeting_delivery->'authorized_by'->>'kind'='user',
   'force_human',r.force_human,'ai_gate',r.metadata->>'ai_gate','ai_authorized_at',r.ai_authorized_at,'assignee_kind',r.assignee_kind,'bot_silenced_until',r.bot_silenced_until);
 end;$$;
-revoke all on function public.fn_meet_delivery_policy(uuid,uuid,text,timestamptz) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_meet_delivery_policy(uuid,uuid,text,timestamptz) to crm_platform;
+revoke all on function public.fn_meet_delivery_policy(uuid,uuid,text,timestamptz) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_meet_delivery_policy(uuid,uuid,text,timestamptz) to crm_service;
 
 -- Fencing também no callback/settle. O sink tem sua própria revalidação; o
 -- transporte já aceito não é desfeito, mas callback velho não reidrata estado.
@@ -21858,8 +21858,8 @@ begin
  end if;
  return true;
 end;$$;
-revoke all on function public.fn_meet_delivery_settle(uuid,uuid,text,timestamptz,text,timestamptz) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_meet_delivery_settle(uuid,uuid,text,timestamptz,text,timestamptz) to crm_platform;
+revoke all on function public.fn_meet_delivery_settle(uuid,uuid,text,timestamptz,text,timestamptz) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_meet_delivery_settle(uuid,uuid,text,timestamptz,text,timestamptz) to crm_service;
 
 -- Prova de sessão, independente da política de CADASTRO obrigatório de MFA.
 create or replace function public.fn_session_mfa_proven()
@@ -21867,7 +21867,7 @@ returns boolean language sql stable security definer set search_path=public as $
  select fortis.current_user_id() is not null and (coalesce(fortis.current_aal(),'aal1')='aal2' or not exists(
   select 1 from identity.mfa_factors where user_id=fortis.current_user_id() and factor_type='totp' and status='verified'));
 $$;
-revoke all on function public.fn_session_mfa_proven() from public,crm_anonymous,crm_user;
+revoke all on function public.fn_session_mfa_proven() from public,crm_anonymous,crm_authenticated;
 
 create or replace function public.fn_meet_action(p_org uuid,p_id uuid,p_revision text,p_request uuid,p_action text,p_conversation uuid default null)
 returns boolean language plpgsql security definer set search_path=public as $$
@@ -21914,7 +21914,7 @@ begin
  return true;
 end;$$;
 revoke all on function public.fn_meet_action(uuid,uuid,text,uuid,text,uuid) from public,crm_anonymous;
-grant execute on function public.fn_meet_action(uuid,uuid,text,uuid,text,uuid) to crm_user;
+grant execute on function public.fn_meet_action(uuid,uuid,text,uuid,text,uuid) to crm_authenticated;
 
 -- Backfill operacional, sem assumir que URL legada é resposta validada Google.
 update public.calendar_appointments set meeting_state='not_requested' where location_kind='google_meet' and meeting_state='not_requested' and status<>'cancelled';
@@ -21927,7 +21927,7 @@ begin
  new:=jsonb_populate_record(new,regexp_replace(to_jsonb(new)::text,'https://meet[.]google[.]com/[a-zA-Z0-9-]+',case when tg_table_name='outbound_copies' then '[meet-link]' else '[link da reunião disponível na Agenda]' end,'g')::jsonb);
  return new;
 end;$$;
-revoke all on function public.fn_meet_minimize_runtime() from public,crm_anonymous,crm_user;
+revoke all on function public.fn_meet_minimize_runtime() from public,crm_anonymous,crm_authenticated;
 do $$ declare tab text;begin
  foreach tab in array array['lead_checkpoints','lead_state','lead_state_transitions','agent_cases','outbound_copies','conversations'] loop
   execute format('drop trigger if exists trg_meet_minimize_runtime on public.%I',tab);
@@ -21949,7 +21949,7 @@ begin
   where organization_id=new.organization_id and contact_id=new.id;
  return new;
 end;$$;
-revoke all on function public.fn_meet_redact_contact() from public,crm_anonymous,crm_user;
+revoke all on function public.fn_meet_redact_contact() from public,crm_anonymous,crm_authenticated;
 drop trigger if exists trg_meet_redact_contact on public.contacts;
 create trigger trg_meet_redact_contact after update of is_anonymized on public.contacts for each row when(new.is_anonymized is true) execute function public.fn_meet_redact_contact();
 notify pgrst,'reload schema';
@@ -21971,7 +21971,7 @@ begin
   is distinct from row(old.operation_mode,old.paused_at,old.published_version_id,old.archived_at,old.config,old.active_kb_version_id) then 1 else 0 end;
  return new;
 end;$$;
-revoke all on function public.fn_reply_agent_revision() from public,crm_anonymous,crm_user;
+revoke all on function public.fn_reply_agent_revision() from public,crm_anonymous,crm_authenticated;
 drop trigger if exists trg_reply_agent_revision on public.ai_agents;
 create trigger trg_reply_agent_revision before update on public.ai_agents for each row execute function public.fn_reply_agent_revision();
 -- A unique persisted inbound changes the response context, independent of its
@@ -21984,7 +21984,7 @@ begin
  end if;
  return new;
 end;$$;
-revoke all on function public.fn_reply_inbound_revision() from public,crm_anonymous,crm_user;
+revoke all on function public.fn_reply_inbound_revision() from public,crm_anonymous,crm_authenticated;
 -- Preserve explicit increments from the inbound observer; ordinary callers
 -- cannot manufacture validity because snapshots originate in the command below.
 create or replace function public.fn_reply_conversation_revision() returns trigger language plpgsql set search_path=public as $$
@@ -21993,7 +21993,7 @@ begin
  is distinct from row(old.assigned_to_user_id,old.assignee_kind,old.active_ai_agent_id,old.channel_session_id,old.bot_silenced_until,old.status,old.service_revision,old.current_demanda_id) then 1 else 0 end;
  return new;
 end;$$;
-revoke all on function public.fn_reply_conversation_revision() from public,crm_anonymous,crm_user;
+revoke all on function public.fn_reply_conversation_revision() from public,crm_anonymous,crm_authenticated;
 drop trigger if exists trg_reply_conversation_revision on public.conversations;
 create trigger trg_reply_conversation_revision before update on public.conversations for each row execute function public.fn_reply_conversation_revision();
 drop trigger if exists trg_reply_inbound_revision on public.messages;
@@ -22005,7 +22005,7 @@ begin
  update public.conversations set reply_context_revision=reply_context_revision+1 where organization_id=new.organization_id and channel_session_id=new.id;
  end if;return new;
 end;$$;
-revoke all on function public.fn_reply_channel_revision() from public,crm_anonymous,crm_user;
+revoke all on function public.fn_reply_channel_revision() from public,crm_anonymous,crm_authenticated;
 drop trigger if exists trg_reply_channel_revision on public.channel_sessions;
 create trigger trg_reply_channel_revision after update on public.channel_sessions for each row execute function public.fn_reply_channel_revision();
 
@@ -22024,11 +22024,11 @@ create table if not exists public.ai_reply_drafts(
  unique(organization_id,conversation_id,agent_id,context_revision,operation_revision)
 );
 alter table public.ai_reply_drafts enable row level security;
-revoke all on public.ai_reply_drafts from crm_anonymous,crm_user;
-grant select on public.ai_reply_drafts to crm_user;
-grant all on public.ai_reply_drafts to crm_platform;
+revoke all on public.ai_reply_drafts from crm_anonymous,crm_authenticated;
+grant select on public.ai_reply_drafts to crm_authenticated;
+grant all on public.ai_reply_drafts to crm_service;
 drop policy if exists tenant_isolation_ai_reply_drafts_all on public.ai_reply_drafts;
-create policy tenant_isolation_ai_reply_drafts_all on public.ai_reply_drafts for select to crm_user
+create policy tenant_isolation_ai_reply_drafts_all on public.ai_reply_drafts for select to crm_authenticated
  using(organization_id in(select public.fn_user_org_ids()) and exists(select 1 from public.conversations c where c.organization_id=ai_reply_drafts.organization_id and c.id=conversation_id and public.fn_can_view_conversation(c.organization_id,c.assigned_to_user_id)));
 create index if not exists ai_reply_drafts_conversation on public.ai_reply_drafts(organization_id,conversation_id,created_at desc);
 
@@ -22053,8 +22053,8 @@ begin
  revision=ai_reply_drafts.revision+case when (ai_reply_drafts.status='failed' or (ai_reply_drafts.status='generating' and ai_reply_drafts.updated_at<now()-interval '10 minutes')) then 1 else 0 end,updated_at=now()
  returning * into d;return d;
 end;$$;
-revoke all on function public.fn_reply_begin(uuid,uuid,uuid,uuid,uuid) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_reply_begin(uuid,uuid,uuid,uuid,uuid) to crm_platform;
+revoke all on function public.fn_reply_begin(uuid,uuid,uuid,uuid,uuid) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_reply_begin(uuid,uuid,uuid,uuid,uuid) to crm_service;
 
 create or replace function public.fn_reply_context_current(p_org uuid,p_id uuid)
 returns boolean language sql stable security definer set search_path=public as $$
@@ -22066,8 +22066,8 @@ returns boolean language sql stable security definer set search_path=public as $
  and a.archived_at is null and a.published_version_id=d.agent_version_id and c.channel_session_id=d.channel_session_id and s.archived_at is null
  and not p.is_blocked and not p.is_anonymized and public.fn_meet_boundary_current(d.service_boundary));
 $$;
-revoke all on function public.fn_reply_context_current(uuid,uuid) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_reply_context_current(uuid,uuid) to crm_platform;
+revoke all on function public.fn_reply_context_current(uuid,uuid) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_reply_context_current(uuid,uuid) to crm_service;
 
 create or replace function public.fn_reply_action(p_org uuid,p_id uuid,p_revision text,p_action text,p_body text default null,p_feedback text default null)
 returns uuid language plpgsql security definer set search_path=public as $$
@@ -22096,7 +22096,7 @@ begin
  raise exception 'reply_action_invalid' using errcode='22023';
 end;$$;
 revoke all on function public.fn_reply_action(uuid,uuid,text,text,text,text) from public,crm_anonymous;
-grant execute on function public.fn_reply_action(uuid,uuid,text,text,text,text) to crm_user;
+grant execute on function public.fn_reply_action(uuid,uuid,text,text,text,text) to crm_authenticated;
 
 create or replace function public.fn_reply_delivery_policy(p_org uuid,p_job uuid,p_worker text,p_acquired_at timestamptz)
 returns jsonb language sql stable security definer set search_path=public as $$
@@ -22118,8 +22118,8 @@ returns jsonb language sql stable security definer set search_path=public as $$
  and((d.approved_support_session_id is not null and ss.id is not null and pa.user_id is not null and au.id is not null and (not(pa.mfa_required or exists(select 1 from identity.mfa_factors mf where mf.user_id=ss.actor_user_id and mf.status='verified')) or au.aal='aal2'))
  or(d.approved_support_session_id is null and u.user_id is not null and(u.role in('manager','admin') or c.assigned_to_user_id=u.user_id or o.settings->>'visibility_mode'='all' or(coalesce(o.settings->>'visibility_mode','own_and_unassigned')='own_and_unassigned' and c.assigned_to_user_id is null))))),'{"current":false}'::jsonb);
 $$;
-revoke all on function public.fn_reply_delivery_policy(uuid,uuid,text,timestamptz) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_reply_delivery_policy(uuid,uuid,text,timestamptz) to crm_platform;
+revoke all on function public.fn_reply_delivery_policy(uuid,uuid,text,timestamptz) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_reply_delivery_policy(uuid,uuid,text,timestamptz) to crm_service;
 
 create or replace function public.fn_reply_receipt_policy(p_org uuid,p_job uuid,p_worker text,p_acquired_at timestamptz)
 returns jsonb language sql stable security definer set search_path=public as $$
@@ -22129,8 +22129,8 @@ returns jsonb language sql stable security definer set search_path=public as $$
  join public.conversations c on c.organization_id=d.organization_id and c.id=d.conversation_id and c.contact_id=d.contact_id
  where j.organization_id=p_org and j.id=p_job and j.kind='approved_reply' and j.contact_id=d.contact_id and j.status='running' and j.locked_by=p_worker and j.locked_at=p_acquired_at and d.status in('approved','sending') and d.approved_body is not null and d.service_boundary=j.payload->'service_boundary'),'{"current":false}'::jsonb);
 $$;
-revoke all on function public.fn_reply_receipt_policy(uuid,uuid,text,timestamptz) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_reply_receipt_policy(uuid,uuid,text,timestamptz) to crm_platform;
+revoke all on function public.fn_reply_receipt_policy(uuid,uuid,text,timestamptz) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_reply_receipt_policy(uuid,uuid,text,timestamptz) to crm_service;
 
 alter table public.agent_inbox_items add column if not exists legacy_recovery_code text check(legacy_recovery_code in('sem_canal','sem_credencial','sem_modelo','modelo_ambiguo','sem_versao','migracao_falhou','pronto'));
 -- Referência tipada abre o agente; causa estruturada registra a última transição.
@@ -22153,14 +22153,14 @@ begin
  values(p_org,'other',case when p_code='pronto' then 'info' else 'warn' end,left(p_title,200),left(p_body,1500),'ai_agent',p_agent,p_code,case when p_code='pronto' then 'resolved' else 'open' end,clock_timestamp(),case when p_code='pronto' then now() else null end);
  return true;
 end;$$;
-revoke all on function public.fn_agent_legacy_notice(uuid,uuid,text,text,text) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_agent_legacy_notice(uuid,uuid,text,text,text) to crm_platform;
+revoke all on function public.fn_agent_legacy_notice(uuid,uuid,text,text,text) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_agent_legacy_notice(uuid,uuid,text,text,text) to crm_service;
 create or replace function public.fn_agent_legacy_published() returns trigger language plpgsql security definer set search_path=public as $$
 begin
  perform public.fn_agent_legacy_notice(new.organization_id,new.id,'pronto','Agente recuperado','A configuração foi recuperada. As respostas usam a versão publicada.');
  return new;
 end;$$;
-revoke all on function public.fn_agent_legacy_published() from public,crm_anonymous,crm_user;
+revoke all on function public.fn_agent_legacy_published() from public,crm_anonymous,crm_authenticated;
 drop trigger if exists trg_agent_legacy_published on public.ai_agents;
 create trigger trg_agent_legacy_published after update of published_version_id on public.ai_agents for each row when(new.kind='rag_bot' and new.published_version_id is not null and new.published_version_id is distinct from old.published_version_id) execute function public.fn_agent_legacy_published();
 
@@ -22195,8 +22195,8 @@ begin
  update public.contacts set last_activity_at=now() where organization_id=p_org and id=contact;
  return to_jsonb(m);
 end;$$;
-revoke all on function public.fn_reply_record_receipt(uuid,uuid,text,timestamptz,uuid,text,text[]) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_reply_record_receipt(uuid,uuid,text,timestamptz,uuid,text,text[]) to crm_platform;
+revoke all on function public.fn_reply_record_receipt(uuid,uuid,text,timestamptz,uuid,text,text[]) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_reply_record_receipt(uuid,uuid,text,timestamptz,uuid,text,text[]) to crm_service;
 
 create or replace function public.fn_reply_settle(p_org uuid,p_job uuid,p_worker text,p_acquired_at timestamptz,p_state text,p_error text default null)
 returns boolean language plpgsql security definer set search_path=public as $$
@@ -22221,8 +22221,8 @@ begin
  update public.ai_reply_drafts set status=p_state,error_code=p_error,message_id=(select crm_message_id from public.send_ledger where organization_id=p_org and job_id=p_job and seq=1 and status='accepted'),updated_at=now() where organization_id=p_org and id=d.id;
  end if;return true;
 end;$$;
-revoke all on function public.fn_reply_settle(uuid,uuid,text,timestamptz,text,text) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_reply_settle(uuid,uuid,text,timestamptz,text,text) to crm_platform;
+revoke all on function public.fn_reply_settle(uuid,uuid,text,timestamptz,text,text) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_reply_settle(uuid,uuid,text,timestamptz,text,text) to crm_service;
 
 create or replace function public.fn_reply_redact() returns trigger language plpgsql security definer set search_path=public as $$
 begin
@@ -22230,7 +22230,7 @@ begin
  update public.job_queue set payload='{}',status=case when status in('pending','running') then 'failed' else status end,locked_by=null,locked_at=null,last_error='reply_redacted' where organization_id=new.organization_id and contact_id=new.id and kind='approved_reply';
  return new;
 end;$$;
-revoke all on function public.fn_reply_redact() from public,crm_anonymous,crm_user;
+revoke all on function public.fn_reply_redact() from public,crm_anonymous,crm_authenticated;
 drop trigger if exists trg_reply_redact on public.contacts;
 create trigger trg_reply_redact after update of is_anonymized on public.contacts for each row when(new.is_anonymized and not old.is_anonymized) execute function public.fn_reply_redact();
 
@@ -22253,8 +22253,8 @@ begin
  update public.ai_reply_drafts set status='sending',updated_at=now() where organization_id=p_org and id=d.id;
  return true;
 end;$$;
-revoke all on function public.fn_reply_prepare(uuid,uuid,text,timestamptz) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_reply_prepare(uuid,uuid,text,timestamptz) to crm_platform;
+revoke all on function public.fn_reply_prepare(uuid,uuid,text,timestamptz) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_reply_prepare(uuid,uuid,text,timestamptz) to crm_service;
 
 notify pgrst,'reload schema';
 
@@ -22394,15 +22394,15 @@ begin
 end;
 $$;
 
-revoke all on function public.fn_publish_ai_agent_version(uuid,uuid,uuid,boolean,text) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_publish_ai_agent_version(uuid,uuid,uuid,boolean,text) to crm_platform;
+revoke all on function public.fn_publish_ai_agent_version(uuid,uuid,uuid,boolean,text) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_publish_ai_agent_version(uuid,uuid,uuid,boolean,text) to crm_service;
 create or replace function public.fn_publish_ai_agent_version(p_org_id uuid,p_agent_id uuid,p_version_id uuid,p_platform_credential_verified boolean)
 returns table(agent_id uuid,version_id uuid,previous_version_id uuid,published_at timestamptz)
 language sql security definer set search_path=public as $$
  select * from public.fn_publish_ai_agent_version(p_org_id,p_agent_id,p_version_id,p_platform_credential_verified,null);
 $$;
-revoke all on function public.fn_publish_ai_agent_version(uuid,uuid,uuid,boolean) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_publish_ai_agent_version(uuid,uuid,uuid,boolean) to crm_platform;
+revoke all on function public.fn_publish_ai_agent_version(uuid,uuid,uuid,boolean) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_publish_ai_agent_version(uuid,uuid,uuid,boolean) to crm_service;
 create or replace function public.fn_publish_ai_agent_version(p_org_id uuid,p_agent_id uuid,p_version_id uuid)
 returns table(agent_id uuid,version_id uuid,previous_version_id uuid,published_at timestamptz)
 language sql security definer set search_path=public as $$
@@ -22414,13 +22414,13 @@ alter table public.ai_agent_versions add column if not exists provisioning_origi
 create or replace function public.fn_agent_provisioning_origin() returns trigger language plpgsql set search_path=public as $$
 begin
  if tg_op='INSERT' then
-  if current_user not in('crm_owner','postgres','crm_platform') then new.provisioning_origin:=null;end if;
+  if current_user not in('crm_owner','postgres','crm_service') then new.provisioning_origin:=null;end if;
  else
   new.provisioning_origin:=old.provisioning_origin;
   if(to_jsonb(new)-array['status','published_at','superseded_at','updated_at','provisioning_origin']) is distinct from(to_jsonb(old)-array['status','published_at','superseded_at','updated_at','provisioning_origin']) then new.provisioning_origin:=null;end if;
  end if;return new;
 end;$$;
-revoke all on function public.fn_agent_provisioning_origin() from public,crm_anonymous,crm_user;
+revoke all on function public.fn_agent_provisioning_origin() from public,crm_anonymous,crm_authenticated;
 drop trigger if exists trg_agent_provisioning_origin on public.ai_agent_versions;
 create trigger trg_agent_provisioning_origin before insert or update on public.ai_agent_versions for each row execute function public.fn_agent_provisioning_origin();
 
@@ -22447,8 +22447,8 @@ create unique index if not exists ad_platform_connections_org_platform_uk
   on public.ad_platform_connections (organization_id, platform);
 
 alter table public.ad_platform_connections enable row level security;
-revoke all on public.ad_platform_connections from crm_anonymous, crm_user;
-grant select, insert, update, delete on public.ad_platform_connections to crm_platform;
+revoke all on public.ad_platform_connections from crm_anonymous, crm_authenticated;
+grant select, insert, update, delete on public.ad_platform_connections to crm_service;
 
 drop trigger if exists trg_ad_platform_connections_updated_at on public.ad_platform_connections;
 create trigger trg_ad_platform_connections_updated_at
@@ -22489,8 +22489,8 @@ create index if not exists ad_conversion_dispatches_org_status_idx
   on public.ad_conversion_dispatches (organization_id, status, attempted_at desc);
 
 alter table public.ad_conversion_dispatches enable row level security;
-revoke all on public.ad_conversion_dispatches from crm_anonymous, crm_user;
-grant select, insert, update, delete on public.ad_conversion_dispatches to crm_platform;
+revoke all on public.ad_conversion_dispatches from crm_anonymous, crm_authenticated;
+grant select, insert, update, delete on public.ad_conversion_dispatches to crm_service;
 
 drop trigger if exists trg_ad_conversion_dispatches_updated_at on public.ad_conversion_dispatches;
 create trigger trg_ad_conversion_dispatches_updated_at
@@ -22544,7 +22544,7 @@ create table if not exists public.ad_insights_connections (
 );
 
 comment on table public.ad_insights_connections is
-  'Credencial de LEITURA da conta de anúncios da organização, para o painel /app/ads/meta. Separada de ad_platform_connections de propósito: escopo de token diferente (ads_read), ciclo de vida diferente e nenhum risco de derrubar o envio de conversões. Server-side only: RLS ligada sem policies e grants revogados de crm_anonymous/crm_user. O token nunca volta ao browser.';
+  'Credencial de LEITURA da conta de anúncios da organização, para o painel /app/ads/meta. Separada de ad_platform_connections de propósito: escopo de token diferente (ads_read), ciclo de vida diferente e nenhum risco de derrubar o envio de conversões. Server-side only: RLS ligada sem policies e grants revogados de crm_anonymous/crm_authenticated. O token nunca volta ao browser.';
 comment on column public.ad_insights_connections.access_token_encrypted is
   'Cifrado por fn_encrypt_oauth (pgp_sym/aes256), a mesma cifra de calendar_connections, channel_sessions e ad_platform_connections. NOT NULL: uma linha sem token não descreve conexão nenhuma.';
 comment on column public.ad_insights_connections.default_account_id is
@@ -22565,8 +22565,8 @@ create unique index if not exists ad_insights_connections_org_platform_uk
   on public.ad_insights_connections (organization_id, platform);
 
 alter table public.ad_insights_connections enable row level security;
-revoke all on public.ad_insights_connections from crm_anonymous, crm_user;
-grant select, insert, update, delete on public.ad_insights_connections to crm_platform;
+revoke all on public.ad_insights_connections from crm_anonymous, crm_authenticated;
+grant select, insert, update, delete on public.ad_insights_connections to crm_service;
 
 drop trigger if exists trg_ad_insights_connections_updated_at on public.ad_insights_connections;
 create trigger trg_ad_insights_connections_updated_at
@@ -22613,13 +22613,13 @@ create table if not exists public.channel_routing_responsibles (
 create index if not exists channel_routing_responsibles_org_user on public.channel_routing_responsibles(organization_id,user_id);
 alter table public.channel_routing_policies enable row level security;
 alter table public.channel_routing_responsibles enable row level security;
-revoke all on public.channel_routing_policies,public.channel_routing_responsibles from public,crm_anonymous,crm_user,crm_platform;
-grant select on public.channel_routing_policies,public.channel_routing_responsibles to crm_user,crm_platform;
+revoke all on public.channel_routing_policies,public.channel_routing_responsibles from public,crm_anonymous,crm_authenticated,crm_service;
+grant select on public.channel_routing_policies,public.channel_routing_responsibles to crm_authenticated,crm_service;
 drop policy if exists tenant_isolation_channel_routing_policies_select on public.channel_routing_policies;
-create policy tenant_isolation_channel_routing_policies_select on public.channel_routing_policies for select to crm_user
+create policy tenant_isolation_channel_routing_policies_select on public.channel_routing_policies for select to crm_authenticated
  using(organization_id in(select public.fn_user_org_ids()) or public.fn_is_platform_admin());
 drop policy if exists tenant_isolation_channel_routing_responsibles_select on public.channel_routing_responsibles;
-create policy tenant_isolation_channel_routing_responsibles_select on public.channel_routing_responsibles for select to crm_user
+create policy tenant_isolation_channel_routing_responsibles_select on public.channel_routing_responsibles for select to crm_authenticated
  using(organization_id in(select public.fn_user_org_ids()) or public.fn_is_platform_admin());
 
 -- Preserva história: apenas o evento pendente duplicado deixa de disputar consumo.
@@ -22645,8 +22645,8 @@ begin
  do update set next_attempt_at=case when event_log.status='pending' then now() else event_log.next_attempt_at end;
 end;
 $$;
-revoke all on function public.fn_request_channel_routing(uuid,uuid) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_request_channel_routing(uuid,uuid) to crm_platform;
+revoke all on function public.fn_request_channel_routing(uuid,uuid) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_request_channel_routing(uuid,uuid) to crm_service;
 
 create or replace function public.fn_emit_conversation_routing()
 returns trigger language plpgsql security definer set search_path=public as $$
@@ -22655,7 +22655,7 @@ begin
  return null;
 end;
 $$;
-revoke all on function public.fn_emit_conversation_routing() from public,crm_anonymous,crm_user;
+revoke all on function public.fn_emit_conversation_routing() from public,crm_anonymous,crm_authenticated;
 
 -- Sem lock de conversa/advisory: este helper só agenda eventos, nunca atribui.
 create or replace function public.fn_wake_channel_routing(p_org uuid,p_channel uuid default null)
@@ -22668,8 +22668,8 @@ begin
  loop perform public.fn_request_channel_routing(p_org,cid);end loop;
 end;
 $$;
-revoke all on function public.fn_wake_channel_routing(uuid,uuid) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_wake_channel_routing(uuid,uuid) to crm_platform;
+revoke all on function public.fn_wake_channel_routing(uuid,uuid) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_wake_channel_routing(uuid,uuid) to crm_service;
 
 create or replace function public.fn_set_channel_routing(p_org uuid,p_channel uuid,p_users uuid[],p_reset boolean default false)
 returns jsonb language plpgsql security definer set search_path=public as $$
@@ -22704,7 +22704,7 @@ begin
 end;
 $$;
 revoke all on function public.fn_set_channel_routing(uuid,uuid,uuid[],boolean) from public,crm_anonymous;
-grant execute on function public.fn_set_channel_routing(uuid,uuid,uuid[],boolean) to crm_user;
+grant execute on function public.fn_set_channel_routing(uuid,uuid,uuid[],boolean) to crm_authenticated;
 
 -- Revogação é UPDATE, não DELETE: cascade sozinho não remove elegibilidade,
 -- nem desatribui conversas abertas (#1562).
@@ -22747,7 +22747,7 @@ begin
  return new;
 end;
 $$;
-revoke all on function public.fn_routing_member_revoked() from public,crm_anonymous,crm_user;
+revoke all on function public.fn_routing_member_revoked() from public,crm_anonymous,crm_authenticated;
 drop trigger if exists trg_routing_member_revoked on public.user_organizations;
 create trigger trg_routing_member_revoked after update of revoked_at,role on public.user_organizations
  for each row when(old.revoked_at is distinct from new.revoked_at or old.role is distinct from new.role) execute function public.fn_routing_member_revoked();
@@ -22756,7 +22756,7 @@ create or replace function public.fn_routing_availability_changed()
 returns trigger language plpgsql security definer set search_path=public as $$
 begin perform public.fn_wake_channel_routing(new.organization_id);return new;end;
 $$;
-revoke all on function public.fn_routing_availability_changed() from public,crm_anonymous,crm_user;
+revoke all on function public.fn_routing_availability_changed() from public,crm_anonymous,crm_authenticated;
 drop trigger if exists trg_routing_availability_changed on public.attendant_availability;
 create trigger trg_routing_availability_changed after insert or update of is_available,capacity,schedule on public.attendant_availability
  for each row execute function public.fn_routing_availability_changed();
@@ -22779,8 +22779,8 @@ begin
  do update set status='open',body=excluded.body;
 end;
 $$;
-revoke all on function public.fn_routing_unassigned_notice(uuid,uuid,text) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_routing_unassigned_notice(uuid,uuid,text) to crm_platform;
+revoke all on function public.fn_routing_unassigned_notice(uuid,uuid,text) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_routing_unassigned_notice(uuid,uuid,text) to crm_service;
 
 create or replace function public.fn_routing_assignment_changed()
 returns trigger language plpgsql security definer set search_path=public as $$
@@ -22794,7 +22794,7 @@ begin
  return new;
 end;
 $$;
-revoke all on function public.fn_routing_assignment_changed() from public,crm_anonymous,crm_user;
+revoke all on function public.fn_routing_assignment_changed() from public,crm_anonymous,crm_authenticated;
 drop trigger if exists trg_routing_assignment_changed on public.conversations;
 create trigger trg_routing_assignment_changed after update of assigned_to_user_id,status on public.conversations
  for each row execute function public.fn_routing_assignment_changed();
@@ -22907,8 +22907,8 @@ begin
  return 'assigned';
 end;
 $$;
-revoke all on function public.fn_channel_routing_claim(uuid,uuid,uuid,uuid,jsonb,text) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_channel_routing_claim(uuid,uuid,uuid,uuid,jsonb,text) to crm_platform;
+revoke all on function public.fn_channel_routing_claim(uuid,uuid,uuid,uuid,jsonb,text) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_channel_routing_claim(uuid,uuid,uuid,uuid,jsonb,text) to crm_service;
 
 -- Recibo privado: fatos da operação e lease; a representação do canal continua
 -- em channel_sessions. TTL vale para replay concluído, nunca apaga reparo pendente.
@@ -22928,8 +22928,8 @@ create table if not exists public.channel_connection_requests (
  foreign key(organization_id,channel_session_id) references public.channel_sessions(organization_id,id) on delete set null(channel_session_id)
 );
 alter table public.channel_connection_requests enable row level security;
-revoke all on public.channel_connection_requests from public,crm_anonymous,crm_user,crm_platform;
-grant select on public.channel_connection_requests to crm_platform;
+revoke all on public.channel_connection_requests from public,crm_anonymous,crm_authenticated,crm_service;
+grant select on public.channel_connection_requests to crm_service;
 -- Sem policy authenticated: contém lease de execução, não é uma tabela de UI.
 
 create or replace function public.fn_reserve_channel_connection(p_org uuid,p_key uuid,p_hash text,p_display_name text default null,p_onboarding boolean default false)
@@ -22985,7 +22985,7 @@ begin
 end;
 $$;
 revoke all on function public.fn_reserve_channel_connection(uuid,uuid,text,text,boolean) from public,crm_anonymous;
-grant execute on function public.fn_reserve_channel_connection(uuid,uuid,text,text,boolean) to crm_user;
+grant execute on function public.fn_reserve_channel_connection(uuid,uuid,text,text,boolean) to crm_authenticated;
 
 create or replace function public.fn_finish_channel_connection(p_org uuid,p_receipt uuid,p_lease uuid,p_status text,p_reason text default null,p_created boolean default false)
 returns jsonb language plpgsql security definer set search_path=public as $$
@@ -23011,8 +23011,8 @@ begin
  return to_jsonb(channel);
 end;
 $$;
-revoke all on function public.fn_finish_channel_connection(uuid,uuid,uuid,text,text,boolean) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_finish_channel_connection(uuid,uuid,uuid,text,text,boolean) to crm_platform;
+revoke all on function public.fn_finish_channel_connection(uuid,uuid,uuid,text,text,boolean) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_finish_channel_connection(uuid,uuid,uuid,text,text,boolean) to crm_service;
 
 -- ---- MFA e LGPD da agenda (migration 0229) ----
 -- 0229 — MFA das ações humanas e ordem LGPD/agenda.
@@ -23122,13 +23122,13 @@ begin
 end;$$;
 
 -- Assinaturas e concessões das portas existentes não mudam.
-revoke all on function public.fn_appointment_change_core(uuid,uuid,bigint,jsonb,boolean,jsonb) from public,crm_anonymous,crm_user;
-revoke all on function public.fn_agenda_settings(uuid,jsonb) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_agenda_settings(uuid,jsonb) to crm_user;
+revoke all on function public.fn_appointment_change_core(uuid,uuid,bigint,jsonb,boolean,jsonb) from public,crm_anonymous,crm_authenticated;
+revoke all on function public.fn_agenda_settings(uuid,jsonb) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_agenda_settings(uuid,jsonb) to crm_authenticated;
 revoke all on function public.fn_google_selection(uuid,jsonb,uuid[],uuid) from public,crm_anonymous;
-grant execute on function public.fn_google_selection(uuid,jsonb,uuid[],uuid) to crm_user;
+grant execute on function public.fn_google_selection(uuid,jsonb,uuid[],uuid) to crm_authenticated;
 revoke all on function public.fn_google_resolve(uuid,uuid,text,text,text,text) from public,crm_anonymous;
-grant execute on function public.fn_google_resolve(uuid,uuid,text,text,text,text) to crm_user;
+grant execute on function public.fn_google_resolve(uuid,uuid,text,text,text,text) to crm_authenticated;
 
 create or replace function public.fn_meet_redact_contact()
 returns trigger language plpgsql security definer set search_path=public as $$
@@ -23145,7 +23145,7 @@ begin
  return new;
 end;$$;
 
-revoke all on function public.fn_meet_redact_contact() from public,crm_anonymous,crm_user;
+revoke all on function public.fn_meet_redact_contact() from public,crm_anonymous,crm_authenticated;
 
 create or replace function public.fn_appointment_recover(p_org uuid,p_event uuid)
 returns jsonb language plpgsql security definer set search_path=public as $$
@@ -23213,8 +23213,8 @@ begin
  return to_jsonb(r);
 end; $$;
 
-revoke all on function public.fn_appointment_recover(uuid,uuid) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_appointment_recover(uuid,uuid) to crm_platform;
+revoke all on function public.fn_appointment_recover(uuid,uuid) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_appointment_recover(uuid,uuid) to crm_service;
 
 create or replace function public.fn_meet_notice(p_org uuid,p_id uuid,p_reason text)
 returns void language plpgsql security definer set search_path=public as $$
@@ -23235,8 +23235,8 @@ begin
  do update set status='open',resolved_at=null,body=excluded.body;
 end;$$;
 
-revoke all on function public.fn_meet_notice(uuid,uuid,text) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_meet_notice(uuid,uuid,text) to crm_platform;
+revoke all on function public.fn_meet_notice(uuid,uuid,text) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_meet_notice(uuid,uuid,text) to crm_service;
 
 create or replace function public.fn_appointment_confirmation_sweep(p_limit int default 100,p_now timestamptz default now())
 returns int language plpgsql security definer set search_path=public as $$
@@ -23276,8 +23276,8 @@ begin
  return n;
 end; $$;
 
-revoke all on function public.fn_appointment_confirmation_sweep(int,timestamptz) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_appointment_confirmation_sweep(int,timestamptz) to crm_platform;
+revoke all on function public.fn_appointment_confirmation_sweep(int,timestamptz) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_appointment_confirmation_sweep(int,timestamptz) to crm_service;
 
 CREATE OR REPLACE FUNCTION "public"."fn_lgpd_cascade_redact_contact"("p_organization_id" "uuid", "p_contact_id" "uuid", "p_request_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
@@ -23462,8 +23462,8 @@ begin
 end;
 $$;
 
-revoke all on function public.fn_lgpd_cascade_redact_contact(uuid,uuid,uuid) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_lgpd_cascade_redact_contact(uuid,uuid,uuid) to crm_platform;
+revoke all on function public.fn_lgpd_cascade_redact_contact(uuid,uuid,uuid) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_lgpd_cascade_redact_contact(uuid,uuid,uuid) to crm_service;
 
 -- UPDATE cru já detém a linha ao entrar em BEFORE ROW. Compatibilidade sem
 -- espera invertida: ocupado implica retry da transação inteira, inclusive true→true.
@@ -23475,7 +23475,7 @@ begin
  end if;
  return new;
 end;$$;
-revoke all on function public.fn_contact_redaction_lock() from public,crm_anonymous,crm_user;
+revoke all on function public.fn_contact_redaction_lock() from public,crm_anonymous,crm_authenticated;
 drop trigger if exists trg_contact_redaction_lock on public.contacts;
 create trigger trg_contact_redaction_lock before update on public.contacts
  for each row when(new.is_anonymized is true) execute function public.fn_contact_redaction_lock();
@@ -23502,8 +23502,8 @@ begin
   where organization_id=p_organization_id and id=p_contact_id returning * into c;
  return jsonb_build_object('already_anonymized',false,'anonymized_at',c.anonymized_at);
 end;$$;
-revoke all on function public.fn_lgpd_anonymize_contact(uuid,uuid) from public,crm_anonymous,crm_user,crm_platform;
-grant execute on function public.fn_lgpd_anonymize_contact(uuid,uuid) to crm_user;
+revoke all on function public.fn_lgpd_anonymize_contact(uuid,uuid) from public,crm_anonymous,crm_authenticated,crm_service;
+grant execute on function public.fn_lgpd_anonymize_contact(uuid,uuid) to crm_authenticated;
 
 -- Cura apenas resíduos deste footprint em clones que já anonimizaram o contato.
 -- Mesma ordem de mutexes; não reescreve o contato nem a data original do direito.
@@ -23585,7 +23585,7 @@ begin
 end;
 $$;
 revoke all on function public.fn_reserve_channel_connection(uuid,uuid,text,text,boolean) from public,crm_anonymous;
-grant execute on function public.fn_reserve_channel_connection(uuid,uuid,text,text,boolean) to crm_user;
+grant execute on function public.fn_reserve_channel_connection(uuid,uuid,text,text,boolean) to crm_authenticated;
 
 notify pgrst,'reload schema';
 
@@ -23646,7 +23646,7 @@ begin
 end;
 $$;
 revoke all on function public.fn_reserve_channel_connection(uuid,uuid,text,text,boolean) from public,crm_anonymous;
-grant execute on function public.fn_reserve_channel_connection(uuid,uuid,text,text,boolean) to crm_user;
+grant execute on function public.fn_reserve_channel_connection(uuid,uuid,text,text,boolean) to crm_authenticated;
 
 -- Auto-curativo: canal WAHA com nome fora do teto que nunca pareou nem está de
 -- pé recebe um nome curto. Sessão que o WAHA nunca aceitou; renomear é seguro.
@@ -23744,8 +23744,8 @@ create policy team_invites_write on public.team_invites
   );
 
 revoke all on public.team_invites from crm_anonymous;
-grant select, insert, update, delete on public.team_invites to crm_user;
-grant all on public.team_invites to crm_platform;
+grant select, insert, update, delete on public.team_invites to crm_authenticated;
+grant all on public.team_invites to crm_service;
 
 drop trigger if exists trg_team_invites_updated_at on public.team_invites;
 create trigger trg_team_invites_updated_at
@@ -24122,8 +24122,8 @@ begin
   );
 end;
 $$;
-revoke all on function public.fn_lgpd_cascade_redact_contact(uuid,uuid,uuid) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_lgpd_cascade_redact_contact(uuid,uuid,uuid) to crm_platform;
+revoke all on function public.fn_lgpd_cascade_redact_contact(uuid,uuid,uuid) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_lgpd_cascade_redact_contact(uuid,uuid,uuid) to crm_service;
 
 -- ─── 5. ligação atendida quebra o silêncio do negócio ───────────────────────
 create or replace function public.fn_update_last_activity_at()
@@ -24296,7 +24296,7 @@ as $$
   );
 $$;
 revoke all on function public.fn_attendant_metrics(uuid,timestamptz,timestamptz,uuid) from public, crm_anonymous;
-grant execute on function public.fn_attendant_metrics(uuid,timestamptz,timestamptz,uuid) to crm_user, crm_platform;
+grant execute on function public.fn_attendant_metrics(uuid,timestamptz,timestamptz,uuid) to crm_authenticated, crm_service;
 
 -- ---- chamada de voz nasce desligada (migration 0236) ----
 --
@@ -24388,7 +24388,7 @@ as $$
 $$;
 
 revoke execute on function public.fn_degraus_de_lembrete_validos(integer[]) from public, crm_anonymous;
-grant execute on function public.fn_degraus_de_lembrete_validos(integer[]) to crm_user, crm_platform;
+grant execute on function public.fn_degraus_de_lembrete_validos(integer[]) to crm_authenticated, crm_service;
 
 do $$
 begin
@@ -24518,7 +24518,7 @@ $$;
 -- Mesma ACL de `fn_log_event` (migration 0034): função pura de leitura, útil no
 -- SQL editor de uma instalação, e nunca alcançável pela anon key.
 revoke all on function public.fn_event_log_e_registro(text) from public, crm_anonymous;
-grant execute on function public.fn_event_log_e_registro(text) to crm_user, crm_platform;
+grant execute on function public.fn_event_log_e_registro(text) to crm_authenticated, crm_service;
 
 create or replace function public.fn_event_log_marca_registro()
 returns trigger
@@ -24537,7 +24537,7 @@ end;
 $$;
 
 revoke all on function public.fn_event_log_marca_registro() from public, crm_anonymous;
-grant execute on function public.fn_event_log_marca_registro() to crm_platform;
+grant execute on function public.fn_event_log_marca_registro() to crm_service;
 
 drop trigger if exists trg_event_log_marca_registro on public.event_log;
 create trigger trg_event_log_marca_registro
@@ -24602,8 +24602,8 @@ begin
   return pgp_sym_decrypt(ciphertext, k);
 end$$;
 
-revoke all on function public.fn_decrypt_oauth(bytea) from public, crm_anonymous, crm_user;
-grant execute on function public.fn_decrypt_oauth(bytea) to crm_platform;
+revoke all on function public.fn_decrypt_oauth(bytea) from public, crm_anonymous, crm_authenticated;
+grant execute on function public.fn_decrypt_oauth(bytea) to crm_service;
 
 notify pgrst, 'reload schema';
 -- ---- rascunho de agente sem número de WhatsApp (migration 0241) ----
@@ -24653,10 +24653,10 @@ create index if not exists agent_inbox_items_case_stale_aberto_idx
 do $$
 begin
   if exists (select 1 from pg_roles where rolname = 'authenticator') then
-    null; -- Fortis: set on crm_app/crm_user by database/platform (migration 0243)
+    null; -- Fortis: set on crm_app/crm_authenticated by database/platform (migration 0243)
   end if;
-  if exists (select 1 from pg_roles where rolname = 'crm_user') then
-    null; -- Fortis: set on crm_app/crm_user by database/platform (migration 0243)
+  if exists (select 1 from pg_roles where rolname = 'crm_authenticated') then
+    null; -- Fortis: set on crm_app/crm_authenticated by database/platform (migration 0243)
   end if;
 end $$;
 -- ---- tags de conversa em uso (migration 0244) ----
@@ -24685,7 +24685,7 @@ $$;
 -- anon) e o grant a PUBLIC que o Postgres da ao criar. Revogar uma so deixa a
 -- funcao alcancavel pela anon key, que vai para o browser.
 revoke execute on function public.fn_tags_de_conversa_em_uso(uuid) from public, crm_anonymous;
-grant  execute on function public.fn_tags_de_conversa_em_uso(uuid) to crm_user, crm_platform;
+grant  execute on function public.fn_tags_de_conversa_em_uso(uuid) to crm_authenticated, crm_service;
 -- ---- Índices em FKs de mensagens e runs (migration 0247) ----
 create index if not exists idx_messages_contact_id
   on public.messages (contact_id)
@@ -24815,8 +24815,8 @@ begin
   end if;
   return p_config;
 end; $$;
-revoke all on function public.fn_agenda_settings(uuid, jsonb) from public, crm_anonymous, crm_user;
-grant execute on function public.fn_agenda_settings(uuid, jsonb) to crm_user;
+revoke all on function public.fn_agenda_settings(uuid, jsonb) from public, crm_anonymous, crm_authenticated;
+grant execute on function public.fn_agenda_settings(uuid, jsonb) to crm_authenticated;
 -- ---- guarda contra replay do gateway do Supabase (migration 0250) ----
 -- O gateway entre o Cloudflare e o PostgREST reexecuta resposta 5xx sem limite.
 -- Um `raise ... errcode='40001'` (conflito benigno) vira HTTP 500 no PostgREST;
@@ -24863,7 +24863,7 @@ comment on function public.fn_pgrst_recusar_replay_do_gateway() is
 -- precisam de EXECUTE; sem isso a própria guarda vira "permission denied" → 5xx.
 -- Não é definer e não lê nada além dos GUCs da requisição: expô-la não amplia nada.
 revoke all on function public.fn_pgrst_recusar_replay_do_gateway() from public, crm_anonymous;
-grant execute on function public.fn_pgrst_recusar_replay_do_gateway() to crm_anonymous, crm_user, crm_platform;
+grant execute on function public.fn_pgrst_recusar_replay_do_gateway() to crm_anonymous, crm_authenticated, crm_service;
 
 -- O papel `authenticator` só existe onde há PostgREST (Supabase). No Postgres
 -- descartável do `test:db` não existe, e um ALTER ROLE sem guarda derrubaria o
@@ -24938,9 +24938,9 @@ end;
 $$;
 
 revoke execute on function public.fn_configurar_pre_go_live_canal(uuid, uuid, text, text[])
-  from public, crm_anonymous, crm_user;
+  from public, crm_anonymous, crm_authenticated;
 grant execute on function public.fn_configurar_pre_go_live_canal(uuid, uuid, text, text[])
-  to crm_platform;
+  to crm_service;
 
 notify pgrst, 'reload schema';
 -- ---- lead do ingest nao duplica (migration 0256) ----
@@ -24994,7 +24994,7 @@ end;
 $$;
 
 revoke execute on function public.fn_nascer_lead_da_conversa(uuid, uuid, uuid, uuid, text, text, jsonb, text[]) from public, crm_anonymous;
-grant  execute on function public.fn_nascer_lead_da_conversa(uuid, uuid, uuid, uuid, text, text, jsonb, text[]) to crm_user, crm_platform;
+grant  execute on function public.fn_nascer_lead_da_conversa(uuid, uuid, uuid, uuid, text, text, jsonb, text[]) to crm_authenticated, crm_service;
 
 comment on function public.fn_nascer_lead_da_conversa(uuid, uuid, uuid, uuid, text, text, jsonb, text[]) is
   'Cria o lead de entrada do ingest serializando por (organização, contato) com advisory lock. Devolve NULL quando já existe um aberto. Existe porque o check-then-act em TypeScript deixava três mensagens seguidas virarem três negócios; um índice único resolveria a corrida e quebraria o caso legítimo de dois negócios abertos criados à mão.';
@@ -25026,10 +25026,10 @@ comment on function public.fn_nascer_lead_da_conversa(uuid, uuid, uuid, uuid, te
 -- do corpo do dump, que reconcede TRUNCATE a cada passada e é revogado aqui.
 
 revoke update, delete, truncate on table public.api_audit_log
-  from public, crm_anonymous, crm_user, crm_platform;
+  from public, crm_anonymous, crm_authenticated, crm_service;
 
 comment on table public.api_audit_log is
-  'L-10: Append-only para os papéis do PostgREST — crm_anonymous, crm_user e crm_platform não têm UPDATE, DELETE nem TRUNCATE (migration 0258; o default ACL do Supabase concedia os três). O único apagamento é fn_expurgar_auditoria_vencida (0167), security definer com piso de 90 dias no corpo. Retencao default 5 anos, configuravel em AUDIT_LOG_RETENTION_DAYS.';
+  'L-10: Append-only para os papéis do PostgREST — crm_anonymous, crm_authenticated e crm_service não têm UPDATE, DELETE nem TRUNCATE (migration 0258; o default ACL do Supabase concedia os três). O único apagamento é fn_expurgar_auditoria_vencida (0167), security definer com piso de 90 dias no corpo. Retencao default 5 anos, configuravel em AUDIT_LOG_RETENTION_DAYS.';
 
 notify pgrst, 'reload schema';
 -- ---- três índices que não pagam o próprio aluguel (migration 0259) ----
@@ -25167,9 +25167,9 @@ $$;
 -- (B) o grant a PUBLIC que o Postgres dá a toda função criada, que
 --     `revoke from anon` NÃO remove.
 revoke execute on function public.fn_agenda_ocupacao_google_do_dono(uuid, uuid, timestamptz, timestamptz) from public, crm_anonymous;
-grant  execute on function public.fn_agenda_ocupacao_google_do_dono(uuid, uuid, timestamptz, timestamptz) to crm_user, crm_platform;
+grant  execute on function public.fn_agenda_ocupacao_google_do_dono(uuid, uuid, timestamptz, timestamptz) to crm_authenticated, crm_service;
 revoke execute on function public.fn_agenda_conexoes_google_do_dono(uuid, uuid) from public, crm_anonymous;
-grant  execute on function public.fn_agenda_conexoes_google_do_dono(uuid, uuid) to crm_user, crm_platform;
+grant  execute on function public.fn_agenda_conexoes_google_do_dono(uuid, uuid) to crm_authenticated, crm_service;
 
 notify pgrst, 'reload schema';
 -- ---- PRIVACIDADE: o título do evento pessoal do Google sai do alcance do membro (migration 0261) ----
@@ -25305,14 +25305,14 @@ notify pgrst, 'reload schema';
 --   `begin atomic`. `fn_google_counts_for_conflicts` não é leitora — é a view que a
 --   chama, e essa direção não trava o `drop`.
 
-revoke select on public.calendar_external_events from crm_user;
+revoke select on public.calendar_external_events from crm_authenticated;
 
 grant select (
   id, organization_id, connection_id, external_calendar_id, external_event_id,
   starts_at, ends_at, is_all_day, status, transparency, external_updated_at,
   created_at, updated_at, ical_uid, seen_generation, recurring_event_id,
   original_start_time
-) on public.calendar_external_events to crm_user;
+) on public.calendar_external_events to crm_authenticated;
 
 -- A MESMA guarda do bloco da reconciliação do Google (migration 0225), e
 -- repetida de propósito: este bloco é medido
@@ -25354,7 +25354,7 @@ where e.status <> 'cancelled'
   and public.fn_google_counts_for_conflicts(e.organization_id, e.connection_id, e.external_calendar_id);
 
 revoke all on public.calendar_selected_external_events from public, crm_anonymous;
-grant select on public.calendar_selected_external_events to crm_user, crm_platform;
+grant select on public.calendar_selected_external_events to crm_authenticated, crm_service;
 
 notify pgrst, 'reload schema';
 
@@ -25469,7 +25469,7 @@ comment on function public.fn_situacao_conta_como_atendimento(text) is
   'tests/invariants/cliente-nasce-do-agendamento.test.ts, que compara com '
   'SITUACOES_QUE_OCUPAM para todo status do vocabulário.';
 
-revoke execute on function public.fn_situacao_conta_como_atendimento(text) from public, crm_anonymous, crm_user;
+revoke execute on function public.fn_situacao_conta_como_atendimento(text) from public, crm_anonymous, crm_authenticated;
 
 -- ────────────────────────────────────────────────────────────────────────────
 -- 4 · o recálculo de UM contato — a única régua de transição
@@ -25612,7 +25612,7 @@ begin
   return v_resultado;
 end $$;
 
-revoke execute on function public.fn_recalcular_cliente_do_contato(uuid, uuid, boolean) from public, crm_anonymous, crm_user;
+revoke execute on function public.fn_recalcular_cliente_do_contato(uuid, uuid, boolean) from public, crm_anonymous, crm_authenticated;
 
 -- ────────────────────────────────────────────────────────────────────────────
 -- 4b · as três colunas são do SISTEMA — e o dono da etiqueta é lido na escrita
@@ -25698,7 +25698,7 @@ comment on function public.fn_colunas_de_cliente_sao_do_sistema() is
 -- Função de trigger não exige EXECUTE de quem dispara o UPDATE; revogar das
 -- duas origens (o grant a PUBLIC e o grant direto a `anon` do baseline) não
 -- quebra nada.
-revoke execute on function public.fn_colunas_de_cliente_sao_do_sistema() from public, crm_anonymous, crm_user;
+revoke execute on function public.fn_colunas_de_cliente_sao_do_sistema() from public, crm_anonymous, crm_authenticated;
 
 -- `before update` sem lista de colunas, com a WHEN filtrando: a lista do
 -- `update of` dispara quando a coluna é MENCIONADA na escrita, mesmo sem mudar
@@ -25792,7 +25792,7 @@ end $$;
 -- Função de trigger não exige EXECUTE de quem dispara o INSERT: revogar das
 -- DUAS origens (o grant a PUBLIC e o grant direto a `anon` do ALTER DEFAULT
 -- PRIVILEGES do baseline) não quebra nada.
-revoke execute on function public.fn_marcar_contato_como_cliente() from public, crm_anonymous, crm_user;
+revoke execute on function public.fn_marcar_contato_como_cliente() from public, crm_anonymous, crm_authenticated;
 
 drop trigger if exists trg_agendamento_marca_cliente on public.calendar_appointments;
 create trigger trg_agendamento_marca_cliente
@@ -25953,7 +25953,7 @@ begin
 end $$;
 
 revoke execute on function public.fn_definir_cliente_pela_agenda(uuid, boolean) from public, crm_anonymous;
-grant  execute on function public.fn_definir_cliente_pela_agenda(uuid, boolean) to crm_user;
+grant  execute on function public.fn_definir_cliente_pela_agenda(uuid, boolean) to crm_authenticated;
 
 
 -- ────────────────────────────────────────────────────────────────────────────
@@ -26263,7 +26263,7 @@ $function$;
 
 
 revoke execute on function public.fn_mesclar_contatos(uuid, uuid, uuid[]) from public, crm_anonymous;
-grant execute on function public.fn_mesclar_contatos(uuid, uuid, uuid[]) to crm_user, crm_platform;
+grant execute on function public.fn_mesclar_contatos(uuid, uuid, uuid[]) to crm_authenticated, crm_service;
 
 notify pgrst, 'reload schema';
 
@@ -26868,10 +26868,10 @@ $$;
 --     `revoke from anon` NÃO remove.
 -- Tratar só uma deixa a função alcançável pela anon key, que vai para o browser.
 revoke execute on function public.fn_vocabulario_de_tags(uuid) from public, crm_anonymous;
-grant  execute on function public.fn_vocabulario_de_tags(uuid) to crm_user, crm_platform;
+grant  execute on function public.fn_vocabulario_de_tags(uuid) to crm_authenticated, crm_service;
 
 revoke execute on function public.fn_tags_normalizar(text[], text, text, boolean) from public, crm_anonymous;
-grant  execute on function public.fn_tags_normalizar(text[], text, text, boolean) to crm_user, crm_platform;
+grant  execute on function public.fn_tags_normalizar(text[], text, text, boolean) to crm_authenticated, crm_service;
 
 -- ⚠️ A partir da 0336 a assinatura é (uuid, text, text, text, text) —
 -- `p_cor text default null`. Revoke/grant com a assinatura ANTIGA não
@@ -26882,7 +26882,7 @@ grant  execute on function public.fn_tags_normalizar(text[], text, text, boolean
 -- tests/invariants/hardening-definer-varredura.test.ts — a exceção nomeia o call
 -- site, não abre a porta.
 revoke execute on function public.fn_vocabulario_de_tags_operar(uuid, text, text, text, text) from public, crm_anonymous;
-grant  execute on function public.fn_vocabulario_de_tags_operar(uuid, text, text, text, text) to crm_user, crm_platform;
+grant  execute on function public.fn_vocabulario_de_tags_operar(uuid, text, text, text, text) to crm_authenticated, crm_service;
 
 -- ---- mensagem do lembrete no tipo (migration 0328) ----
 -- O texto que o cron manda no WhatsApp passa a ser do MOLDE. NULL = a frase
@@ -26913,7 +26913,7 @@ as $$
 $$;
 
 revoke execute on function public.fn_degraus_de_lembrete_validos(integer[]) from public, crm_anonymous;
-grant execute on function public.fn_degraus_de_lembrete_validos(integer[]) to crm_user, crm_platform;
+grant execute on function public.fn_degraus_de_lembrete_validos(integer[]) to crm_authenticated, crm_service;
 
 create or replace function public.fn_corpos_de_lembrete_validos(p_corpos jsonb)
 returns boolean
@@ -26934,7 +26934,7 @@ as $$
 $$;
 
 revoke execute on function public.fn_corpos_de_lembrete_validos(jsonb) from public, crm_anonymous;
-grant execute on function public.fn_corpos_de_lembrete_validos(jsonb) to crm_user, crm_platform;
+grant execute on function public.fn_corpos_de_lembrete_validos(jsonb) to crm_authenticated, crm_service;
 
 update public.calendar_event_types
    set reminder_bodies = coalesce((
@@ -27264,7 +27264,7 @@ $$;
 revoke all     on function public.fn_atrito_metrics(uuid, timestamptz, timestamptz, int, float8, int) from public;
 revoke execute on function public.fn_atrito_metrics(uuid, timestamptz, timestamptz, int, float8, int) from crm_anonymous;
 grant  execute on function public.fn_atrito_metrics(uuid, timestamptz, timestamptz, int, float8, int)
-  to crm_user, crm_platform;
+  to crm_authenticated, crm_service;
 
 create or replace function public.fn_attendant_metrics(
   p_org uuid,
@@ -27400,7 +27400,7 @@ as $$
   );
 $$;
 revoke all on function public.fn_attendant_metrics(uuid,timestamptz,timestamptz,uuid) from public, crm_anonymous;
-grant execute on function public.fn_attendant_metrics(uuid,timestamptz,timestamptz,uuid) to crm_user, crm_platform;
+grant execute on function public.fn_attendant_metrics(uuid,timestamptz,timestamptz,uuid) to crm_authenticated, crm_service;
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- PAÍS DA ORGANIZAÇÃO (migration 20260918014500_0277) — issue #1033
@@ -27548,17 +27548,17 @@ alter table public.extension_installations enable row level security;
 alter table public.organization_extensions enable row level security;
 alter table public.extension_operations enable row level security;
 revoke all on public.extension_catalogs, public.extension_artifacts, public.extension_installations,
-  public.organization_extensions, public.extension_operations from public, crm_anonymous, crm_user, crm_platform;
+  public.organization_extensions, public.extension_operations from public, crm_anonymous, crm_authenticated, crm_service;
 grant select on public.extension_catalogs, public.extension_artifacts, public.extension_installations,
-  public.organization_extensions, public.extension_operations to crm_platform;
-grant select on public.organization_extensions to crm_user;
+  public.organization_extensions, public.extension_operations to crm_service;
+grant select on public.organization_extensions to crm_authenticated;
 drop policy if exists tenant_isolation_organization_extensions_select on public.organization_extensions;
 -- fn_user_org_ids() inclui convite ainda não aceito e sessão de suporte ativa. O
 -- vínculo exige convite aceito de quem é membro e, sem exigir linha de membership,
 -- aceita a sessão de suporte ativa na organização atendida: sem isso, quem dá suporte
 -- via todas as extensões como "desativadas" enquanto o cliente as via ativas.
 create policy tenant_isolation_organization_extensions_select on public.organization_extensions
-  for select to crm_user using (
+  for select to crm_authenticated using (
     organization_id in (select public.fn_user_org_ids())
     and (
       exists (select 1 from public.user_organizations u where u.organization_id = organization_extensions.organization_id
@@ -28127,28 +28127,28 @@ drop trigger if exists extensions_guard_core_update on public.system_update_runs
 create trigger extensions_guard_core_update before insert or update of status on public.system_update_runs
   for each row execute function public.fn_extensions_guard_core_update();
 
-revoke execute on function public.fn_extensions_assert_actor(uuid,uuid) from public,crm_anonymous,crm_user,crm_platform;
-revoke execute on function public.fn_extensions_fingerprint(jsonb) from public,crm_anonymous,crm_user,crm_platform;
-revoke execute on function public.fn_extensions_guard_core_update() from public,crm_anonymous,crm_user,crm_platform;
-revoke execute on function public.fn_extensions_core_update_in_progress() from public,crm_anonymous,crm_user,crm_platform;
-revoke execute on function public.fn_extensions_admit_catalog(uuid,uuid,jsonb,text) from public,crm_anonymous,crm_user;
-revoke execute on function public.fn_extensions_prepare_install(uuid,uuid,uuid,text,text,text,integer) from public,crm_anonymous,crm_user;
-revoke execute on function public.fn_extensions_finish_install(uuid,uuid,jsonb,text,integer,text) from public,crm_anonymous,crm_user;
-revoke execute on function public.fn_extensions_fail_install(uuid,uuid,text) from public,crm_anonymous,crm_user;
-revoke execute on function public.fn_extensions_cancel_install(uuid,uuid) from public,crm_anonymous,crm_user;
-revoke execute on function public.fn_extensions_configure(uuid,uuid,uuid,uuid,integer,boolean,jsonb) from public,crm_anonymous,crm_user;
-revoke execute on function public.fn_extensions_revert_install(uuid,uuid,uuid,integer) from public,crm_anonymous,crm_user;
-revoke execute on function public.fn_extensions_remove_installation(uuid,uuid,uuid,integer) from public,crm_anonymous,crm_user;
-revoke execute on function public.fn_extensions_installation_counts(uuid) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_extensions_admit_catalog(uuid,uuid,jsonb,text) to crm_platform;
-grant execute on function public.fn_extensions_prepare_install(uuid,uuid,uuid,text,text,text,integer) to crm_platform;
-grant execute on function public.fn_extensions_finish_install(uuid,uuid,jsonb,text,integer,text) to crm_platform;
-grant execute on function public.fn_extensions_fail_install(uuid,uuid,text) to crm_platform;
-grant execute on function public.fn_extensions_cancel_install(uuid,uuid) to crm_platform;
-grant execute on function public.fn_extensions_configure(uuid,uuid,uuid,uuid,integer,boolean,jsonb) to crm_platform;
-grant execute on function public.fn_extensions_revert_install(uuid,uuid,uuid,integer) to crm_platform;
-grant execute on function public.fn_extensions_remove_installation(uuid,uuid,uuid,integer) to crm_platform;
-grant execute on function public.fn_extensions_installation_counts(uuid) to crm_platform;
+revoke execute on function public.fn_extensions_assert_actor(uuid,uuid) from public,crm_anonymous,crm_authenticated,crm_service;
+revoke execute on function public.fn_extensions_fingerprint(jsonb) from public,crm_anonymous,crm_authenticated,crm_service;
+revoke execute on function public.fn_extensions_guard_core_update() from public,crm_anonymous,crm_authenticated,crm_service;
+revoke execute on function public.fn_extensions_core_update_in_progress() from public,crm_anonymous,crm_authenticated,crm_service;
+revoke execute on function public.fn_extensions_admit_catalog(uuid,uuid,jsonb,text) from public,crm_anonymous,crm_authenticated;
+revoke execute on function public.fn_extensions_prepare_install(uuid,uuid,uuid,text,text,text,integer) from public,crm_anonymous,crm_authenticated;
+revoke execute on function public.fn_extensions_finish_install(uuid,uuid,jsonb,text,integer,text) from public,crm_anonymous,crm_authenticated;
+revoke execute on function public.fn_extensions_fail_install(uuid,uuid,text) from public,crm_anonymous,crm_authenticated;
+revoke execute on function public.fn_extensions_cancel_install(uuid,uuid) from public,crm_anonymous,crm_authenticated;
+revoke execute on function public.fn_extensions_configure(uuid,uuid,uuid,uuid,integer,boolean,jsonb) from public,crm_anonymous,crm_authenticated;
+revoke execute on function public.fn_extensions_revert_install(uuid,uuid,uuid,integer) from public,crm_anonymous,crm_authenticated;
+revoke execute on function public.fn_extensions_remove_installation(uuid,uuid,uuid,integer) from public,crm_anonymous,crm_authenticated;
+revoke execute on function public.fn_extensions_installation_counts(uuid) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_extensions_admit_catalog(uuid,uuid,jsonb,text) to crm_service;
+grant execute on function public.fn_extensions_prepare_install(uuid,uuid,uuid,text,text,text,integer) to crm_service;
+grant execute on function public.fn_extensions_finish_install(uuid,uuid,jsonb,text,integer,text) to crm_service;
+grant execute on function public.fn_extensions_fail_install(uuid,uuid,text) to crm_service;
+grant execute on function public.fn_extensions_cancel_install(uuid,uuid) to crm_service;
+grant execute on function public.fn_extensions_configure(uuid,uuid,uuid,uuid,integer,boolean,jsonb) to crm_service;
+grant execute on function public.fn_extensions_revert_install(uuid,uuid,uuid,integer) to crm_service;
+grant execute on function public.fn_extensions_remove_installation(uuid,uuid,uuid,integer) to crm_service;
+grant execute on function public.fn_extensions_installation_counts(uuid) to crm_service;
 -- END 0271_extensoes_declarativas
 -- ---- travas do modo somente leitura do suporte: a enumeração vira função (migration 0274) ----
 --
@@ -28172,24 +28172,24 @@ begin
  and (exists(select 1 from pg_attribute a where a.attrelid=c.oid and a.attname='organization_id' and not a.attisdropped) or c.relname='organizations')
  loop
  v_col:=case when r.relname='organizations' then 'id' else 'organization_id' end;
- if not (has_table_privilege('crm_user',r.oid,'insert') or has_table_privilege('crm_user',r.oid,'update') or has_table_privilege('crm_user',r.oid,'delete')) then
+ if not (has_table_privilege('crm_authenticated',r.oid,'insert') or has_table_privilege('crm_authenticated',r.oid,'update') or has_table_privilege('crm_authenticated',r.oid,'delete')) then
    execute format('drop policy if exists support_write_insert on public.%I',r.relname);
    execute format('drop policy if exists support_write_update on public.%I',r.relname);
    execute format('drop policy if exists support_write_delete on public.%I',r.relname);
    continue; -- tabela server-only mantém ZERO policies, contrato mais restritivo
  end if;
  execute format('drop policy if exists support_write_insert on public.%I',r.relname);
- execute format('create policy support_write_insert on public.%I as restrictive for insert to crm_user with check (public.fn_support_write_allowed(%I))',r.relname,v_col);
+ execute format('create policy support_write_insert on public.%I as restrictive for insert to crm_authenticated with check (public.fn_support_write_allowed(%I))',r.relname,v_col);
  execute format('drop policy if exists support_write_update on public.%I',r.relname);
- execute format('create policy support_write_update on public.%I as restrictive for update to crm_user using (public.fn_support_write_allowed(%I)) with check (public.fn_support_write_allowed(%I))',r.relname,v_col,v_col);
+ execute format('create policy support_write_update on public.%I as restrictive for update to crm_authenticated using (public.fn_support_write_allowed(%I)) with check (public.fn_support_write_allowed(%I))',r.relname,v_col,v_col);
  execute format('drop policy if exists support_write_delete on public.%I',r.relname);
- execute format('create policy support_write_delete on public.%I as restrictive for delete to crm_user using (public.fn_support_write_allowed(%I))',r.relname,v_col);
+ execute format('create policy support_write_delete on public.%I as restrictive for delete to crm_authenticated using (public.fn_support_write_allowed(%I))',r.relname,v_col);
  end loop;
 end $f$;
 
 -- Só quem aplica o schema (o dono das tabelas) a chama; não é `security definer`.
 -- EXECUTE sai das duas origens e dos papéis que o default ACL do Supabase alcança.
-revoke execute on function public.fn_aplicar_travas_de_suporte() from public, crm_anonymous, crm_user, crm_platform;
+revoke execute on function public.fn_aplicar_travas_de_suporte() from public, crm_anonymous, crm_authenticated, crm_service;
 
 -- ---- a espera da Fila não recomeça a cada mensagem do cliente (migration 0267) ----
 --
@@ -28296,8 +28296,8 @@ begin
  update public.contacts set last_activity_at=greatest(last_activity_at,p_at)
  where id=c.contact_id and organization_id=c.organization_id;
 end; $$;
-revoke execute on function public.fn_mark_conversation_message(uuid,text,text,timestamptz) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_mark_conversation_message(uuid,text,text,timestamptz) to crm_platform;
+revoke execute on function public.fn_mark_conversation_message(uuid,text,text,timestamptz) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_mark_conversation_message(uuid,text,text,timestamptz) to crm_service;
 
 -- ---- o caso só nasce do motor (migration 0279) ----
 -- 0279 — O caso só nasce do motor.
@@ -28344,21 +28344,21 @@ grant execute on function public.fn_mark_conversation_message(uuid,text,text,tim
 -- Vigiado por tests/invariants/caso-so-nasce-do-motor.test.ts.
 
 -- ── agent_cases ─────────────────────────────────────────────────────────────
-revoke insert, update, delete, truncate on public.agent_cases from crm_user, crm_anonymous;
+revoke insert, update, delete, truncate on public.agent_cases from crm_authenticated, crm_anonymous;
 drop policy if exists tenant_isolation_agent_cases_all    on public.agent_cases;
 drop policy if exists tenant_isolation_agent_cases_select on public.agent_cases;
 create policy tenant_isolation_agent_cases_select on public.agent_cases
-  for select to crm_user
+  for select to crm_authenticated
   using (organization_id in (select public.fn_user_org_ids()));
 
 -- ── agent_case_events ───────────────────────────────────────────────────────
-revoke insert, update, delete, truncate on public.agent_case_events from crm_user, crm_anonymous;
+revoke insert, update, delete, truncate on public.agent_case_events from crm_authenticated, crm_anonymous;
 drop policy if exists tenant_isolation_agent_case_events_insert on public.agent_case_events;
 -- A policy de SELECT (`tenant_isolation_agent_case_events_select`) fica como está.
 
 -- ── conversation_assignment_events ──────────────────────────────────────────
 revoke insert, update, delete, truncate on public.conversation_assignment_events
-  from crm_user, crm_anonymous;
+  from crm_authenticated, crm_anonymous;
 drop policy if exists cae_insert on public.conversation_assignment_events;
 -- `cae_select` (que desde a 0173 herda o escopo da conversa) fica como está.
 
@@ -28569,8 +28569,8 @@ as $$
   returning e.*;
 $$;
 
-revoke execute on function fn_claim_due_followup_enrollments(int, int) from public, crm_anonymous, crm_user;
-grant execute on function fn_claim_due_followup_enrollments(int, int) to crm_platform;
+revoke execute on function fn_claim_due_followup_enrollments(int, int) from public, crm_anonymous, crm_authenticated;
+grant execute on function fn_claim_due_followup_enrollments(int, int) to crm_service;
 
 notify pgrst, 'reload schema';
 
@@ -28603,8 +28603,8 @@ comment on column public.google_ads_landing_pages.message_template is
   'Precisa conter o literal {token}: é onde o código do clique é injetado antes do redirect para o wa.me.';
 
 alter table public.google_ads_landing_pages enable row level security;
-revoke all on public.google_ads_landing_pages from crm_anonymous, crm_user;
-grant select, insert, update, delete on public.google_ads_landing_pages to crm_platform;
+revoke all on public.google_ads_landing_pages from crm_anonymous, crm_authenticated;
+grant select, insert, update, delete on public.google_ads_landing_pages to crm_service;
 
 drop trigger if exists trg_google_ads_landing_pages_updated_at on public.google_ads_landing_pages;
 create trigger trg_google_ads_landing_pages_updated_at
@@ -28633,8 +28633,8 @@ comment on column public.google_ads_click_refs.matched_at is
   'Carimbado no match com a mensagem recebida. Um clique só casa uma vez: a UPDATE que o faz é condicional a matched_at is null.';
 
 alter table public.google_ads_click_refs enable row level security;
-revoke all on public.google_ads_click_refs from crm_anonymous, crm_user;
-grant select, insert, update, delete on public.google_ads_click_refs to crm_platform;
+revoke all on public.google_ads_click_refs from crm_anonymous, crm_authenticated;
+grant select, insert, update, delete on public.google_ads_click_refs to crm_service;
 
 -- ---- Meta: ref curto que carrega as UTMs da landing page (migration 0381) ----
 -- Espelho da captura do Google Ads acima, para o caso que falta: a página com
@@ -28664,8 +28664,8 @@ comment on column public.meta_ads_landing_pages.message_template is
   'Precisa conter o literal {token}: é onde o ref do clique é injetado antes do redirect para o wa.me.';
 
 alter table public.meta_ads_landing_pages enable row level security;
-revoke all on public.meta_ads_landing_pages from crm_anonymous, crm_user;
-grant select, insert, update, delete on public.meta_ads_landing_pages to crm_platform;
+revoke all on public.meta_ads_landing_pages from crm_anonymous, crm_authenticated;
+grant select, insert, update, delete on public.meta_ads_landing_pages to crm_service;
 
 drop trigger if exists trg_meta_ads_landing_pages_updated_at on public.meta_ads_landing_pages;
 create trigger trg_meta_ads_landing_pages_updated_at
@@ -28695,8 +28695,8 @@ comment on column public.meta_ads_click_refs.matched_at is
   'Carimbado no match com a mensagem recebida. Um clique só casa uma vez: a UPDATE que o faz é condicional a matched_at is null.';
 
 alter table public.meta_ads_click_refs enable row level security;
-revoke all on public.meta_ads_click_refs from crm_anonymous, crm_user;
-grant select, insert, update, delete on public.meta_ads_click_refs to crm_platform;
+revoke all on public.meta_ads_click_refs from crm_anonymous, crm_authenticated;
+grant select, insert, update, delete on public.meta_ads_click_refs to crm_service;
 
 -- ---- Google Ads: credencial de conversão (migration 0307) ----
 -- Refresh token OAuth (não access token longo-vivo) + os três identificadores
@@ -29088,8 +29088,8 @@ begin
   );
 end;
 $$;
-revoke all on function public.fn_lgpd_cascade_redact_contact(uuid,uuid,uuid) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_lgpd_cascade_redact_contact(uuid,uuid,uuid) to crm_platform;
+revoke all on function public.fn_lgpd_cascade_redact_contact(uuid,uuid,uuid) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_lgpd_cascade_redact_contact(uuid,uuid,uuid) to crm_service;
 
 notify pgrst, 'reload schema';
 
@@ -29238,9 +29238,9 @@ alter table public.agent_case_chat_messages enable row level security;
 -- sem o revoke, a tabela nasce com INSERT/UPDATE/DELETE para `authenticated` e
 -- a policy seria a única coisa entre um `viewer` e a escrita. Mesmo desenho de
 -- `ai_reply_drafts` (0227) e das três tabelas da 0279.
-revoke all    on public.agent_case_chat_messages from crm_anonymous, crm_user;
-grant  select on public.agent_case_chat_messages to crm_user;
-grant  all    on public.agent_case_chat_messages to crm_platform;
+revoke all    on public.agent_case_chat_messages from crm_anonymous, crm_authenticated;
+grant  select on public.agent_case_chat_messages to crm_authenticated;
+grant  all    on public.agent_case_chat_messages to crm_service;
 
 -- ── RLS: organização + papel + VISIBILIDADE DA CONVERSA ───────────────────
 -- A terceira condição é a razão de a tabela carregar `conversation_id` dentro.
@@ -29251,7 +29251,7 @@ grant  all    on public.agent_case_chat_messages to crm_platform;
 drop policy if exists tenant_isolation_agent_case_chat_messages_select on public.agent_case_chat_messages;
 create policy tenant_isolation_agent_case_chat_messages_select
   on public.agent_case_chat_messages
-  for select to crm_user
+  for select to crm_authenticated
   using (
     organization_id in (select public.fn_user_org_ids())
     and public.fn_role_at_least(organization_id, 'agent')
@@ -29299,8 +29299,8 @@ $$;
 -- grant implícito a PUBLIC que o Postgres dá a toda função ao criá-la (que
 -- `revoke from anon` não remove). Fechar uma só deixa a função exposta com o
 -- gate verde.
-revoke all    on function public.fn_expurgar_conversa_do_caso_vencida(int,int) from public, crm_anonymous, crm_user;
-grant  execute on function public.fn_expurgar_conversa_do_caso_vencida(int,int) to crm_platform;
+revoke all    on function public.fn_expurgar_conversa_do_caso_vencida(int,int) from public, crm_anonymous, crm_authenticated;
+grant  execute on function public.fn_expurgar_conversa_do_caso_vencida(int,int) to crm_service;
 
 -- ── A cascata de LGPD alcança a conversa do caso ──────────────────────────
 -- Derivada do corpo VIGENTE do baseline (a definição de maior número de linha),
@@ -29650,8 +29650,8 @@ begin
   );
 end;
 $$;
-revoke all on function public.fn_lgpd_cascade_redact_contact(uuid,uuid,uuid) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_lgpd_cascade_redact_contact(uuid,uuid,uuid) to crm_platform;
+revoke all on function public.fn_lgpd_cascade_redact_contact(uuid,uuid,uuid) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_lgpd_cascade_redact_contact(uuid,uuid,uuid) to crm_service;
 
 -- ── travas do suporte, depois de toda tabela nova (migration 0274) ─────────
 -- `agent_case_chat_messages` nasce SERVER-ONLY (revoke de anon/authenticated +
@@ -29920,9 +29920,9 @@ alter table public.passagens_de_atendimento enable row level security;
 -- (os dois motores) e, na onda seguinte, o trigger definer do reconhecimento.
 -- Uma passagem forjada por um membro é uma mentira com cara de registro — ela
 -- diria que a IA desistiu de um atendimento que ela nunca tocou.
-revoke all    on public.passagens_de_atendimento from crm_anonymous, crm_user;
-grant  select on public.passagens_de_atendimento to crm_user;
-grant  all    on public.passagens_de_atendimento to crm_platform;
+revoke all    on public.passagens_de_atendimento from crm_anonymous, crm_authenticated;
+grant  select on public.passagens_de_atendimento to crm_authenticated;
+grant  all    on public.passagens_de_atendimento to crm_service;
 
 -- ── RLS: organização + papel + VISIBILIDADE DA CONVERSA ───────────────────
 -- As três condições, e cada uma fecha uma porta diferente:
@@ -29938,7 +29938,7 @@ drop policy if exists tenant_isolation_passagens_de_atendimento_all on public.pa
 drop policy if exists tenant_isolation_passagens_de_atendimento_select on public.passagens_de_atendimento;
 create policy tenant_isolation_passagens_de_atendimento_select
   on public.passagens_de_atendimento
-  for select to crm_user
+  for select to crm_authenticated
   using (
     organization_id in (select public.fn_user_org_ids())
     and public.fn_role_at_least(organization_id, 'agent')
@@ -29989,8 +29989,8 @@ $$;
 -- FUNCTIONS TO anon` do baseline (que `revoke from public` não remove) e o grant
 -- implícito a PUBLIC que o Postgres dá a toda função ao criá-la (que `revoke
 -- from anon` não remove). Fechar uma só deixa a função exposta com o gate verde.
-revoke all     on function public.fn_expurgar_passagens_vencidas(int,int) from public, crm_anonymous, crm_user;
-grant  execute on function public.fn_expurgar_passagens_vencidas(int,int) to crm_platform;
+revoke all     on function public.fn_expurgar_passagens_vencidas(int,int) from public, crm_anonymous, crm_authenticated;
+grant  execute on function public.fn_expurgar_passagens_vencidas(int,int) to crm_service;
 
 -- ── A cascata de LGPD alcança a passagem ──────────────────────────────────
 -- Derivada do corpo VIGENTE do baseline (a definição de maior número de linha),
@@ -30387,8 +30387,8 @@ begin
   );
 end;
 $$;
-revoke all on function public.fn_lgpd_cascade_redact_contact(uuid,uuid,uuid) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_lgpd_cascade_redact_contact(uuid,uuid,uuid) to crm_platform;
+revoke all on function public.fn_lgpd_cascade_redact_contact(uuid,uuid,uuid) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_lgpd_cascade_redact_contact(uuid,uuid,uuid) to crm_service;
 
 -- ── travas do suporte, depois de toda tabela nova (migration 0274) ─────────
 -- `passagens_de_atendimento` nasce SERVER-ONLY (revoke de anon/authenticated +
@@ -30561,7 +30561,7 @@ begin
   return new;
 end;
 $$;
-revoke all on function public.fn_aviso_de_caso_coerente() from public, crm_anonymous, crm_user;
+revoke all on function public.fn_aviso_de_caso_coerente() from public, crm_anonymous, crm_authenticated;
 
 drop trigger if exists trg_aviso_de_caso_coerente on public.config_aviso_de_caso;
 create trigger trg_aviso_de_caso_coerente
@@ -30657,19 +30657,19 @@ alter table public.entregas_de_aviso_de_caso enable row level security;
 -- ele as tabelas nascem com INSERT/UPDATE/DELETE para `authenticated` e a
 -- policy seria a única coisa entre um `viewer` e a escrita. É o defeito que a
 -- 0279 teve de consertar em três tabelas já nascidas.
-revoke all    on public.config_aviso_de_caso      from crm_anonymous, crm_user;
-revoke all    on public.entregas_de_aviso_de_caso from crm_anonymous, crm_user;
-grant  select on public.config_aviso_de_caso      to crm_user;
-grant  select on public.entregas_de_aviso_de_caso to crm_user;
-grant  all    on public.config_aviso_de_caso      to crm_platform;
-grant  all    on public.entregas_de_aviso_de_caso to crm_platform;
+revoke all    on public.config_aviso_de_caso      from crm_anonymous, crm_authenticated;
+revoke all    on public.entregas_de_aviso_de_caso from crm_anonymous, crm_authenticated;
+grant  select on public.config_aviso_de_caso      to crm_authenticated;
+grant  select on public.entregas_de_aviso_de_caso to crm_authenticated;
+grant  all    on public.config_aviso_de_caso      to crm_service;
+grant  all    on public.entregas_de_aviso_de_caso to crm_service;
 
 -- Leitura da CONFIGURAÇÃO: `admin`. Ela carrega o telefone de um funcionário e
 -- o vínculo com a conexão — quem configura conexão neste produto é admin.
 drop policy if exists leitura_config_aviso_de_caso on public.config_aviso_de_caso;
 create policy leitura_config_aviso_de_caso
   on public.config_aviso_de_caso
-  for select to crm_user
+  for select to crm_authenticated
   using (
     organization_id in (select public.fn_user_org_ids())
     and public.fn_role_at_least(organization_id, 'admin')
@@ -30681,7 +30681,7 @@ create policy leitura_config_aviso_de_caso
 drop policy if exists leitura_entregas_de_aviso_de_caso on public.entregas_de_aviso_de_caso;
 create policy leitura_entregas_de_aviso_de_caso
   on public.entregas_de_aviso_de_caso
-  for select to crm_user
+  for select to crm_authenticated
   using (
     organization_id in (select public.fn_user_org_ids())
     and public.fn_role_at_least(organization_id, 'manager')
@@ -30809,7 +30809,7 @@ $$;
 -- que o Postgres dá a toda função ao criá-la (que `revoke from anon` não
 -- remove). Fechar uma só deixa a função exposta com o gate verde.
 revoke all     on function public.fn_definir_aviso_de_caso(uuid,uuid,text,text,boolean,boolean) from public, crm_anonymous;
-grant  execute on function public.fn_definir_aviso_de_caso(uuid,uuid,text,text,boolean,boolean) to crm_user;
+grant  execute on function public.fn_definir_aviso_de_caso(uuid,uuid,text,text,boolean,boolean) to crm_authenticated;
 
 -- ── O JID que o transporte resolveu ───────────────────────────────────────
 -- Função SEPARADA, e não `update` direto pelo handler: dar `update` da
@@ -30834,8 +30834,8 @@ begin
      and destino_jid is distinct from p_jid;
 end;
 $$;
-revoke all     on function public.fn_registrar_jid_do_aviso(uuid,text) from public, crm_anonymous, crm_user;
-grant  execute on function public.fn_registrar_jid_do_aviso(uuid,text) to crm_platform;
+revoke all     on function public.fn_registrar_jid_do_aviso(uuid,text) from public, crm_anonymous, crm_authenticated;
+grant  execute on function public.fn_registrar_jid_do_aviso(uuid,text) to crm_service;
 
 -- ── O contador do descarte ────────────────────────────────────────────────
 -- Chamada pelos ingestores quando uma mensagem do número interno é descartada.
@@ -30859,8 +30859,8 @@ begin
    where organization_id = p_org;
 end;
 $$;
-revoke all     on function public.fn_contar_mensagem_ignorada(uuid) from public, crm_anonymous, crm_user;
-grant  execute on function public.fn_contar_mensagem_ignorada(uuid) to crm_platform;
+revoke all     on function public.fn_contar_mensagem_ignorada(uuid) from public, crm_anonymous, crm_authenticated;
+grant  execute on function public.fn_contar_mensagem_ignorada(uuid) to crm_service;
 
 -- ── Retenção: a tabela nasce com dono de piso ─────────────────────────────
 create or replace function public.fn_expurgar_avisos_de_caso_vencidos(
@@ -30892,8 +30892,8 @@ begin
   return v_apagadas;
 end;
 $$;
-revoke all     on function public.fn_expurgar_avisos_de_caso_vencidos(int,int) from public, crm_anonymous, crm_user;
-grant  execute on function public.fn_expurgar_avisos_de_caso_vencidos(int,int) to crm_platform;
+revoke all     on function public.fn_expurgar_avisos_de_caso_vencidos(int,int) from public, crm_anonymous, crm_authenticated;
+grant  execute on function public.fn_expurgar_avisos_de_caso_vencidos(int,int) to crm_service;
 
 -- Os dois CHECK de vocabulário (`agent_case_events.kind` += 'alert_sent' e
 -- `agent_inbox_items.kind` += 'aviso_de_caso_nao_entregue') NÃO são
@@ -31343,8 +31343,8 @@ begin
   );
 end;
 $$;
-revoke all on function public.fn_lgpd_cascade_redact_contact(uuid,uuid,uuid) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_lgpd_cascade_redact_contact(uuid,uuid,uuid) to crm_platform;
+revoke all on function public.fn_lgpd_cascade_redact_contact(uuid,uuid,uuid) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_lgpd_cascade_redact_contact(uuid,uuid,uuid) to crm_service;
 
 -- ── travas do suporte, depois de toda tabela nova (migration 0274) ─────────
 -- `config_aviso_de_caso` e `entregas_de_aviso_de_caso` nascem com a escrita
@@ -31467,7 +31467,7 @@ $$;
 -- Função nova em `public` nasce EXPOSTA por DUAS origens (o grant implícito a
 -- PUBLIC do Postgres e o `ALTER DEFAULT PRIVILEGES … TO anon` do baseline), e
 -- revogar só uma deixa a função alcançável com o gate verde.
-revoke all on function public.fn_passagem_reconhecida() from public, crm_anonymous, crm_user;
+revoke all on function public.fn_passagem_reconhecida() from public, crm_anonymous, crm_authenticated;
 
 drop trigger if exists trg_passagem_reconhecida on public.conversation_assignment_events;
 create trigger trg_passagem_reconhecida
@@ -31527,7 +31527,7 @@ end;
 $$;
 
 revoke all     on function public.fn_passagem_devolvida(uuid, uuid) from public, crm_anonymous;
-grant  execute on function public.fn_passagem_devolvida(uuid, uuid) to crm_user, crm_platform;
+grant  execute on function public.fn_passagem_devolvida(uuid, uuid) to crm_authenticated, crm_service;
 
 -- ---- o cliente repetiu depois da passagem + o contador do cobrador (migration 0294) ----
 -- ═══════════════════════════════════════════════════════════════════════════
@@ -31901,7 +31901,7 @@ $$;
 revoke all     on function public.fn_atrito_metrics(uuid, timestamptz, timestamptz, int, float8, int) from public;
 revoke execute on function public.fn_atrito_metrics(uuid, timestamptz, timestamptz, int, float8, int) from crm_anonymous;
 grant  execute on function public.fn_atrito_metrics(uuid, timestamptz, timestamptz, int, float8, int)
-  to crm_user, crm_platform;
+  to crm_authenticated, crm_service;
 
 
 -- ---- o banco conhece o perfil declarativo v2 das extensões (migration 0282) ----
@@ -31952,8 +31952,8 @@ returns boolean language sql immutable set search_path = public, pg_temp as $$
 $$;
 
 revoke execute on function public.fn_extensions_permissoes_validas(jsonb) from public, crm_anonymous;
-revoke execute on function public.fn_extensions_permissoes_validas(jsonb) from crm_user;
-grant execute on function public.fn_extensions_permissoes_validas(jsonb) to crm_platform;
+revoke execute on function public.fn_extensions_permissoes_validas(jsonb) from crm_authenticated;
+grant execute on function public.fn_extensions_permissoes_validas(jsonb) to crm_service;
 
 create or replace function public.fn_extensions_admit_catalog(p_actor uuid, p_operation uuid, p_snapshot jsonb, p_digest text)
 returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
@@ -32214,14 +32214,14 @@ begin
 end $$;
 
 revoke execute on function public.fn_extensions_admit_catalog(uuid, uuid, jsonb, text) from public, crm_anonymous;
-revoke execute on function public.fn_extensions_admit_catalog(uuid, uuid, jsonb, text) from crm_user;
-grant execute on function public.fn_extensions_admit_catalog(uuid, uuid, jsonb, text) to crm_platform;
+revoke execute on function public.fn_extensions_admit_catalog(uuid, uuid, jsonb, text) from crm_authenticated;
+grant execute on function public.fn_extensions_admit_catalog(uuid, uuid, jsonb, text) to crm_service;
 revoke execute on function public.fn_extensions_finish_install(uuid, uuid, jsonb, text, integer, text) from public, crm_anonymous;
-revoke execute on function public.fn_extensions_finish_install(uuid, uuid, jsonb, text, integer, text) from crm_user;
-grant execute on function public.fn_extensions_finish_install(uuid, uuid, jsonb, text, integer, text) to crm_platform;
+revoke execute on function public.fn_extensions_finish_install(uuid, uuid, jsonb, text, integer, text) from crm_authenticated;
+grant execute on function public.fn_extensions_finish_install(uuid, uuid, jsonb, text, integer, text) to crm_service;
 revoke execute on function public.fn_extensions_revert_install(uuid, uuid, uuid, integer) from public, crm_anonymous;
-revoke execute on function public.fn_extensions_revert_install(uuid, uuid, uuid, integer) from crm_user;
-grant execute on function public.fn_extensions_revert_install(uuid, uuid, uuid, integer) to crm_platform;
+revoke execute on function public.fn_extensions_revert_install(uuid, uuid, uuid, integer) from crm_authenticated;
+grant execute on function public.fn_extensions_revert_install(uuid, uuid, uuid, integer) to crm_service;
 
 -- ---- marcadores do contato no filtro de conversas (migration 0323) ----
 -- Campo calculado do PostgREST: o filtro ?tag= do Inbox casa conversations.tags
@@ -32241,7 +32241,7 @@ comment on function public.tags_do_contato(public.conversations) is
   'Campo calculado do PostgREST: os marcadores do contato da conversa. Permite ao filtro ?tag= do Inbox casar conversations.tags OU contacts.tags num único or= (migration 0323).';
 
 revoke execute on function public.tags_do_contato(public.conversations) from public, crm_anonymous;
-grant  execute on function public.tags_do_contato(public.conversations) to crm_user, crm_platform;
+grant  execute on function public.tags_do_contato(public.conversations) to crm_authenticated, crm_service;
 
 notify pgrst, 'reload schema';
 
@@ -32278,15 +32278,15 @@ create table if not exists public.platform_smtp_settings (
 );
 
 comment on table public.platform_smtp_settings is
-  'O servidor SMTP DESTA INSTALAÇÃO (singleton). Server-side only: RLS ligada sem policies e grants revogados de crm_anonymous/crm_user — o PostgREST não a serve. A senha é cifrada e nunca volta ao browser; a tela devolve apenas se existe.';
+  'O servidor SMTP DESTA INSTALAÇÃO (singleton). Server-side only: RLS ligada sem policies e grants revogados de crm_anonymous/crm_authenticated — o PostgREST não a serve. A senha é cifrada e nunca volta ao browser; a tela devolve apenas se existe.';
 comment on column public.platform_smtp_settings.smtp_password_encrypted is
   'Cifrada por fn_encrypt_oauth (pgp_sym_encrypt/aes256). Nunca gravar em claro: sem a chave mestra o save recusa. Quem tem este valor manda e-mail como a instalação.';
 comment on column public.platform_smtp_settings.smtp_security is
   'starttls (normalmente porta 587), tls (TLS implícito, normalmente 465) ou none. O CHECK existe porque o valor vira flag do transporte em lib/email/smtp.ts.';
 
 alter table public.platform_smtp_settings enable row level security;
-revoke all on public.platform_smtp_settings from crm_anonymous, crm_user;
-grant select, insert, update on public.platform_smtp_settings to crm_platform;
+revoke all on public.platform_smtp_settings from crm_anonymous, crm_authenticated;
+grant select, insert, update on public.platform_smtp_settings to crm_service;
 
 drop trigger if exists trg_platform_smtp_settings_updated_at on public.platform_smtp_settings;
 create trigger trg_platform_smtp_settings_updated_at
@@ -32383,7 +32383,7 @@ $$ language sql security definer stable;
 -- DUAS origens (default privileges + grant implícito a PUBLIC). Revoga as
 -- duas, concede só a service_role (é o worker quem chama, via admin client).
 revoke execute on function public.fn_resolve_inbound_number(text) from public, crm_anonymous;
-grant execute on function public.fn_resolve_inbound_number(text) to crm_platform;
+grant execute on function public.fn_resolve_inbound_number(text) to crm_service;
 
 notify pgrst,'reload schema';
 
@@ -32931,8 +32931,8 @@ begin
   );
 end;
 $$;
-revoke all on function public.fn_lgpd_cascade_redact_contact(uuid,uuid,uuid) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_lgpd_cascade_redact_contact(uuid,uuid,uuid) to crm_platform;
+revoke all on function public.fn_lgpd_cascade_redact_contact(uuid,uuid,uuid) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_lgpd_cascade_redact_contact(uuid,uuid,uuid) to crm_service;
 
 notify pgrst, 'reload schema';
 
@@ -33015,7 +33015,7 @@ select
 from public.voip_trunk_settings;
 
 revoke all on public.voip_trunk_settings_safe from crm_anonymous;
-grant select on public.voip_trunk_settings_safe to crm_user;
+grant select on public.voip_trunk_settings_safe to crm_authenticated;
 
 notify pgrst, 'reload schema';
 
@@ -33054,7 +33054,7 @@ comment on table public.modulos_instalados is
   'Módulos opcionais instalados NA INSTÂNCIA (ADR-0002, D3). Sem organization_id: o corte é por instalação. Escrito só por fn_modulo_instalar e fn_reaplicar_modulos_instalados.';
 
 alter table public.modulos_instalados enable row level security;
-revoke all on public.modulos_instalados from crm_anonymous, crm_user;
+revoke all on public.modulos_instalados from crm_anonymous, crm_authenticated;
 
 -- ── 2. O recibo mora no mesmo livro das extensões ────────────────────────────
 -- Um tipo novo, `module_install`, em vez de um segundo livro: a instalação passa "pelo mesmo
@@ -33125,8 +33125,8 @@ begin
 end $$;
 
 revoke execute on function public.fn_modulo_instalar(uuid, uuid, text) from public, crm_anonymous;
-revoke execute on function public.fn_modulo_instalar(uuid, uuid, text) from crm_user;
-grant execute on function public.fn_modulo_instalar(uuid, uuid, text) to crm_platform;
+revoke execute on function public.fn_modulo_instalar(uuid, uuid, text) from crm_authenticated;
+grant execute on function public.fn_modulo_instalar(uuid, uuid, text) to crm_service;
 
 -- ── 4. A reaplicação nas atualizações (D6) — dois comandos, de propósito ─────
 -- O kit aplica o baseline SEM transação única (`psql -f`) e trata como falha toda linha ERROR
@@ -33181,8 +33181,8 @@ begin
   end if;
 end $$;
 
-revoke execute on function public.fn_reaplicar_modulos_instalados() from public, crm_anonymous, crm_user, crm_platform;
-revoke execute on function public.fn_conferir_modulos_instalados() from public, crm_anonymous, crm_user, crm_platform;
+revoke execute on function public.fn_reaplicar_modulos_instalados() from public, crm_anonymous, crm_authenticated, crm_service;
+revoke execute on function public.fn_conferir_modulos_instalados() from public, crm_anonymous, crm_authenticated, crm_service;
 
 -- ---- a agenda dos colegas é uma opção da organização (migration 0343) ----
 --
@@ -33209,7 +33209,7 @@ returns boolean language sql stable security definer set search_path=public as $
 $$;
 
 revoke all on function public.fn_colegas_podem_mexer_na_agenda(uuid) from public,crm_anonymous;
-grant execute on function public.fn_colegas_podem_mexer_na_agenda(uuid) to crm_user,crm_platform;
+grant execute on function public.fn_colegas_podem_mexer_na_agenda(uuid) to crm_authenticated,crm_service;
 
 comment on function public.fn_colegas_podem_mexer_na_agenda(uuid) is
   'A opção "Atendentes podem mexer na agenda dos colegas" desta organização (issue #978). Ausente = ligada: só o booleano false explícito em settings.colegas_podem_mexer_na_agenda desliga.';
@@ -33262,7 +33262,7 @@ begin
  return to_jsonb(a);
 end; $$;
 
-revoke all on function public.fn_appointment_change_core(uuid,uuid,bigint,jsonb,boolean,jsonb) from public,crm_anonymous,crm_user;
+revoke all on function public.fn_appointment_change_core(uuid,uuid,bigint,jsonb,boolean,jsonb) from public,crm_anonymous,crm_authenticated;
 
 create or replace function public.fn_definir_colegas_podem_mexer_na_agenda(p_org uuid,p_ligado boolean)
 returns jsonb language plpgsql security definer set search_path=public as $$
@@ -33288,7 +33288,7 @@ begin
 end; $$;
 
 revoke all on function public.fn_definir_colegas_podem_mexer_na_agenda(uuid,boolean) from public,crm_anonymous;
-grant execute on function public.fn_definir_colegas_podem_mexer_na_agenda(uuid,boolean) to crm_user,crm_platform;
+grant execute on function public.fn_definir_colegas_podem_mexer_na_agenda(uuid,boolean) to crm_authenticated,crm_service;
 
 comment on function public.fn_definir_colegas_podem_mexer_na_agenda(uuid,boolean) is
   'Liga/desliga "Atendentes podem mexer na agenda dos colegas" (issue #978). Gerente ou acima, suporte de escrita e MFA comprovado; ela mesma confere pelo fortis.current_user_id(). Grava settings.colegas_podem_mexer_na_agenda e devolve {ligado,mudou}.';
@@ -33719,7 +33719,7 @@ returns bigint language sql stable set search_path = public as $$
   select coalesce(max(number), 0) + 1 from public.sales where organization_id = p_org;
 $$;
 revoke execute on function public.fn_proximo_numero_de_comanda(uuid) from public, crm_anonymous;
-grant execute on function public.fn_proximo_numero_de_comanda(uuid) to crm_user, crm_platform;
+grant execute on function public.fn_proximo_numero_de_comanda(uuid) to crm_authenticated, crm_service;
 
 -- ─── A FINALIZAÇÃO: as seis coisas numa transação ────────────────────────────
 create or replace function public.fn_finalizar_comanda(
@@ -33844,7 +33844,7 @@ begin
 end $$;
 
 revoke execute on function public.fn_finalizar_comanda(uuid, uuid, uuid, integer) from public, crm_anonymous;
-grant execute on function public.fn_finalizar_comanda(uuid, uuid, uuid, integer) to crm_user;
+grant execute on function public.fn_finalizar_comanda(uuid, uuid, uuid, integer) to crm_authenticated;
 
 -- ─── O ESTORNO: contra-lançamento, nunca exclusão ────────────────────────────
 create or replace function public.fn_estornar_comanda(p_org uuid, p_sale uuid, p_motivo text)
@@ -33911,7 +33911,7 @@ begin
 end $$;
 
 revoke execute on function public.fn_estornar_comanda(uuid, uuid, text) from public, crm_anonymous;
-grant execute on function public.fn_estornar_comanda(uuid, uuid, text) to crm_user;
+grant execute on function public.fn_estornar_comanda(uuid, uuid, text) to crm_authenticated;
 
 -- ─── RLS nas cinco ───────────────────────────────────────────────────────────
 do $$
@@ -34079,7 +34079,7 @@ as $$
 $$;
 
 revoke execute on function public.fn_relatorio_financeiro(uuid, date, date) from public, crm_anonymous;
-grant  execute on function public.fn_relatorio_financeiro(uuid, date, date) to crm_user, crm_platform;
+grant  execute on function public.fn_relatorio_financeiro(uuid, date, date) to crm_authenticated, crm_service;
 
 -- ---- regra de comissao inativa (migration 0354) ----
 -- A regra entra no catálogo financeiro genérico, que espera `is_active`.
@@ -34121,7 +34121,7 @@ as $$
 $$;
 
 revoke execute on function public.fn_saldo_de_fidelidade(uuid, uuid) from public, crm_anonymous;
-grant  execute on function public.fn_saldo_de_fidelidade(uuid, uuid) to crm_user, crm_platform;
+grant  execute on function public.fn_saldo_de_fidelidade(uuid, uuid) to crm_authenticated, crm_service;
 
 comment on function public.fn_saldo_de_fidelidade(uuid, uuid) is
   'Saldo de pontos de um contato: sum(points) do livro-razão. Soma no banco porque o PostgREST corta em 1000 linhas sem avisar, e saldo truncado vira prêmio negado a quem tinha direito.';
@@ -34808,8 +34808,8 @@ returns boolean language sql stable security definer set search_path=public as $
        or (coalesce(o.settings->>'visibility_mode','own_and_unassigned')='own_and_unassigned' and v.assigned_to_user_id is null)))))
    and a.meeting_delivery->'service_boundary'=j.payload->'service_boundary' and public.fn_meet_boundary_current(j.payload->'service_boundary'));
 $$;
-revoke all on function public.fn_meet_delivery_current(uuid,uuid,text,timestamptz) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_meet_delivery_current(uuid,uuid,text,timestamptz) to crm_platform;
+revoke all on function public.fn_meet_delivery_current(uuid,uuid,text,timestamptz) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_meet_delivery_current(uuid,uuid,text,timestamptz) to crm_service;
 
 create or replace function public.fn_meet_action(p_org uuid,p_id uuid,p_revision text,p_request uuid,p_action text,p_conversation uuid default null)
 returns boolean language plpgsql security definer set search_path=public as $$
@@ -34918,7 +34918,7 @@ begin
   where organization_id=new.organization_id and id=new.id;
  return new;
 end;$$;
-revoke all on function public.fn_meet_delivery_enqueue() from public,crm_anonymous,crm_user;
+revoke all on function public.fn_meet_delivery_enqueue() from public,crm_anonymous,crm_authenticated;
 
 
 
@@ -34933,8 +34933,8 @@ create table if not exists public.channel_integrations (
   updated_at timestamptz not null default now()
 );
 alter table public.channel_integrations enable row level security;
-revoke all on public.channel_integrations from public, crm_anonymous, crm_user;
-grant all on public.channel_integrations to crm_platform;
+revoke all on public.channel_integrations from public, crm_anonymous, crm_authenticated;
+grant all on public.channel_integrations to crm_service;
 alter table public.contacts add column if not exists social_identity text;
 -- A ficha MESCLADA fica de fora do índice: depois de juntar dois contatos, o
 -- perdedor continua na tabela com `is_merged_into` apontando para o vencedor, e
@@ -35014,8 +35014,8 @@ create index if not exists prospecting_conversation on public.prospecting_candid
 alter table public.prospecting_settings enable row level security;
 alter table public.prospecting_campaigns enable row level security;
 alter table public.prospecting_candidates enable row level security;
-revoke all on public.prospecting_settings, public.prospecting_campaigns, public.prospecting_candidates from public, crm_anonymous, crm_user;
-grant all on public.prospecting_settings, public.prospecting_campaigns, public.prospecting_candidates to crm_platform;
+revoke all on public.prospecting_settings, public.prospecting_campaigns, public.prospecting_candidates from public, crm_anonymous, crm_authenticated;
+grant all on public.prospecting_settings, public.prospecting_campaigns, public.prospecting_candidates to crm_service;
 notify pgrst, 'reload schema';
 
 -- Migration 0370: native prospecting redaction and suppression
@@ -35043,8 +35043,8 @@ begin
   return new;
 end;
 $$;
-revoke all on function public.fn_prospecting_refuse_erased_candidate() from public, crm_anonymous, crm_user;
-grant execute on function public.fn_prospecting_refuse_erased_candidate() to crm_platform;
+revoke all on function public.fn_prospecting_refuse_erased_candidate() from public, crm_anonymous, crm_authenticated;
+grant execute on function public.fn_prospecting_refuse_erased_candidate() to crm_service;
 drop trigger if exists prospecting_refuse_erased on public.prospecting_candidates;
 create trigger prospecting_refuse_erased before insert on public.prospecting_candidates
   for each row execute function public.fn_prospecting_refuse_erased_candidate();
@@ -35089,7 +35089,7 @@ $$;
 -- que o Postgres dá, e o default privilege do baseline para `anon`): as duas
 -- saem, e só quem precisa entra.
 revoke execute on function public.fn_telefone_variantes(text) from public, crm_anonymous;
-grant execute on function public.fn_telefone_variantes(text) to crm_platform;
+grant execute on function public.fn_telefone_variantes(text) to crm_service;
 
 CREATE OR REPLACE FUNCTION "public"."fn_lgpd_cascade_redact_contact"("p_organization_id" "uuid", "p_contact_id" "uuid", "p_request_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
@@ -35631,8 +35631,8 @@ begin
   );
 end;
 $$;
-revoke all on function public.fn_lgpd_cascade_redact_contact(uuid,uuid,uuid) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_lgpd_cascade_redact_contact(uuid,uuid,uuid) to crm_platform;
+revoke all on function public.fn_lgpd_cascade_redact_contact(uuid,uuid,uuid) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_lgpd_cascade_redact_contact(uuid,uuid,uuid) to crm_service;
 
 notify pgrst, 'reload schema';
 
@@ -35703,7 +35703,7 @@ begin
  new.meeting_delivery_job_id := null;
  return new;
 end;$$;
-revoke execute on function public.fn_remarcar_corrige_o_envio() from public, crm_anonymous, crm_user;
+revoke execute on function public.fn_remarcar_corrige_o_envio() from public, crm_anonymous, crm_authenticated;
 
 drop trigger if exists trg_remarcar_corrige_o_envio on public.calendar_appointments;
 create trigger trg_remarcar_corrige_o_envio
@@ -35773,7 +35773,7 @@ begin
   where organization_id=new.organization_id and id=new.id;
  return new;
 end;$$;
-revoke all on function public.fn_meet_delivery_enqueue() from public,crm_anonymous,crm_user;
+revoke all on function public.fn_meet_delivery_enqueue() from public,crm_anonymous,crm_authenticated;
 -- ---- Cache da hierarquia do anúncio (migration 0380) ----
 -- Nome do anúncio, do conjunto e da campanha por id de anúncio. Existe porque a
 -- conta de anúncios opera em cota baixa e um único anúncio gera centenas de
@@ -35802,15 +35802,15 @@ create unique index if not exists ad_hierarchy_cache_org_platform_ad_uk
   on public.ad_hierarchy_cache (organization_id, platform, ad_id);
 
 comment on table public.ad_hierarchy_cache is
-  'Nome do anúncio, do conjunto e da campanha, guardados por id de anúncio. Existe porque a conta de anúncios opera em cota baixa e um único anúncio gera centenas de contatos: sem cache, cada ficha aberta gastaria uma chamada para repetir a mesma pergunta. Server-side only: RLS ligada sem policies e grants revogados de crm_anonymous/crm_user.';
+  'Nome do anúncio, do conjunto e da campanha, guardados por id de anúncio. Existe porque a conta de anúncios opera em cota baixa e um único anúncio gera centenas de contatos: sem cache, cada ficha aberta gastaria uma chamada para repetir a mesma pergunta. Server-side only: RLS ligada sem policies e grants revogados de crm_anonymous/crm_authenticated.';
 comment on column public.ad_hierarchy_cache.ad_id is
   'O identificador do anúncio na plataforma — o mesmo que a ingestão grava em contacts.source_metadata.ad_id. Sem FK: o anúncio é da plataforma e pode ser apagado lá sem aviso.';
 comment on column public.ad_hierarchy_cache.fetched_at is
   'Quando a hierarquia foi lida da plataforma. A idade aceitável é decisão do código que lê, não do schema: ela muda com o degrau de cota da conta, e não com a forma do dado.';
 
 alter table public.ad_hierarchy_cache enable row level security;
-revoke all on public.ad_hierarchy_cache from crm_anonymous, crm_user;
-grant select, insert, update, delete on public.ad_hierarchy_cache to crm_platform;
+revoke all on public.ad_hierarchy_cache from crm_anonymous, crm_authenticated;
+grant select, insert, update, delete on public.ad_hierarchy_cache to crm_service;
 
 drop trigger if exists trg_ad_hierarchy_cache_updated_at on public.ad_hierarchy_cache;
 create trigger trg_ad_hierarchy_cache_updated_at
@@ -36126,8 +36126,8 @@ comment on function public.fn_campanha_sincroniza_ack() is
 -- entra na lista pelo mesmo motivo. O trigger não depende de nenhum deles: a
 -- permissão de função de trigger é conferida na CRIAÇÃO do trigger, não a cada
 -- disparo.
-revoke execute on function public.fn_campanha_sincroniza_ack() from public, crm_anonymous, crm_user;
-grant execute on function public.fn_campanha_sincroniza_ack() to crm_platform;
+revoke execute on function public.fn_campanha_sincroniza_ack() from public, crm_anonymous, crm_authenticated;
+grant execute on function public.fn_campanha_sincroniza_ack() to crm_service;
 
 drop trigger if exists trg_messages_sincroniza_campanha on public.messages;
 create trigger trg_messages_sincroniza_campanha
@@ -36175,8 +36175,8 @@ begin
 end;
 $$;
 
-revoke execute on function public.fn_redigir_campanhas_do_contato_anonimizado() from public, crm_anonymous, crm_user;
-grant execute on function public.fn_redigir_campanhas_do_contato_anonimizado() to crm_platform;
+revoke execute on function public.fn_redigir_campanhas_do_contato_anonimizado() from public, crm_anonymous, crm_authenticated;
+grant execute on function public.fn_redigir_campanhas_do_contato_anonimizado() to crm_service;
 
 drop trigger if exists trg_redigir_campanhas_anonimizado on public.contacts;
 create trigger trg_redigir_campanhas_anonimizado
@@ -36214,9 +36214,9 @@ create policy campaigns_write on public.campaigns
         and public.fn_role_at_least(organization_id, 'manager'))
   );
 
-revoke all on public.campaigns from crm_anonymous, crm_user;
-grant select on public.campaigns to crm_user;
-grant all on public.campaigns to crm_platform;
+revoke all on public.campaigns from crm_anonymous, crm_authenticated;
+grant select on public.campaigns to crm_authenticated;
+grant all on public.campaigns to crm_service;
 
 alter table public.campaign_recipients enable row level security;
 
@@ -36240,9 +36240,9 @@ create policy campaign_recipients_write on public.campaign_recipients
         and public.fn_role_at_least(organization_id, 'manager'))
   );
 
-revoke all on public.campaign_recipients from crm_anonymous, crm_user;
-grant select on public.campaign_recipients to crm_user;
-grant all on public.campaign_recipients to crm_platform;
+revoke all on public.campaign_recipients from crm_anonymous, crm_authenticated;
+grant select on public.campaign_recipients to crm_authenticated;
+grant all on public.campaign_recipients to crm_service;
 
 
 -- ---- templates e lista de exclusão de campanha (migration 0376) ----
@@ -36361,8 +36361,8 @@ begin
 end;
 $$;
 
-revoke execute on function public.fn_redigir_exclusoes_do_contato_anonimizado() from public, crm_anonymous, crm_user;
-grant execute on function public.fn_redigir_exclusoes_do_contato_anonimizado() to crm_platform;
+revoke execute on function public.fn_redigir_exclusoes_do_contato_anonimizado() from public, crm_anonymous, crm_authenticated;
+grant execute on function public.fn_redigir_exclusoes_do_contato_anonimizado() to crm_service;
 
 drop trigger if exists trg_redigir_exclusoes_anonimizado on public.contacts;
 create trigger trg_redigir_exclusoes_anonimizado
@@ -36394,9 +36394,9 @@ create policy campaign_templates_write on public.campaign_templates
         and public.fn_role_at_least(organization_id, 'manager'))
   );
 
-revoke all on public.campaign_templates from crm_anonymous, crm_user;
-grant select on public.campaign_templates to crm_user;
-grant all on public.campaign_templates to crm_platform;
+revoke all on public.campaign_templates from crm_anonymous, crm_authenticated;
+grant select on public.campaign_templates to crm_authenticated;
+grant all on public.campaign_templates to crm_service;
 
 alter table public.campaign_suppressions enable row level security;
 
@@ -36419,9 +36419,9 @@ create policy campaign_suppressions_write on public.campaign_suppressions
         and public.fn_role_at_least(organization_id, 'manager'))
   );
 
-revoke all on public.campaign_suppressions from crm_anonymous, crm_user;
-grant select on public.campaign_suppressions to crm_user;
-grant all on public.campaign_suppressions to crm_platform;
+revoke all on public.campaign_suppressions from crm_anonymous, crm_authenticated;
+grant select on public.campaign_suppressions to crm_authenticated;
+grant all on public.campaign_suppressions to crm_service;
 
 
 -- ---- rodízio de números na campanha (migration 0377) ----
@@ -36531,9 +36531,9 @@ create policy campaign_channel_sessions_write on public.campaign_channel_session
         and public.fn_role_at_least(organization_id, 'manager'))
   );
 
-revoke all on public.campaign_channel_sessions from crm_anonymous, crm_user;
-grant select on public.campaign_channel_sessions to crm_user;
-grant all on public.campaign_channel_sessions to crm_platform;
+revoke all on public.campaign_channel_sessions from crm_anonymous, crm_authenticated;
+grant select on public.campaign_channel_sessions to crm_authenticated;
+grant all on public.campaign_channel_sessions to crm_service;
 
 
 -- ---- campanha declara funil, etapa e agente (migration 0378) ----
@@ -36777,7 +36777,7 @@ $$;
 -- e o grant nominal a anon do ALTER DEFAULT PRIVILEGES do baseline.
 revoke all on function public.fn_redigir_conversas_ao_anonimizar() from public;
 revoke execute on function public.fn_redigir_conversas_ao_anonimizar() from crm_anonymous;
-revoke execute on function public.fn_redigir_conversas_ao_anonimizar() from crm_user;
+revoke execute on function public.fn_redigir_conversas_ao_anonimizar() from crm_authenticated;
 
 drop trigger if exists trg_redigir_conversas_ao_anonimizar on public.contacts;
 create trigger trg_redigir_conversas_ao_anonimizar
@@ -36900,7 +36900,7 @@ $$;
 
 revoke all on function public.fn_contato_anonimizado_encerra_roteiro() from public;
 revoke execute on function public.fn_contato_anonimizado_encerra_roteiro() from crm_anonymous;
-revoke execute on function public.fn_contato_anonimizado_encerra_roteiro() from crm_user;
+revoke execute on function public.fn_contato_anonimizado_encerra_roteiro() from crm_authenticated;
 
 drop trigger if exists trg_contato_anonimizado_encerra_roteiro on public.contacts;
 create trigger trg_contato_anonimizado_encerra_roteiro
@@ -36942,7 +36942,7 @@ $$;
 
 revoke all on function public.fn_enrollment_superficie_coerente() from public;
 revoke execute on function public.fn_enrollment_superficie_coerente() from crm_anonymous;
-revoke execute on function public.fn_enrollment_superficie_coerente() from crm_user;
+revoke execute on function public.fn_enrollment_superficie_coerente() from crm_authenticated;
 
 drop trigger if exists trg_enrollment_superficie_coerente on public.followup_enrollments;
 create trigger trg_enrollment_superficie_coerente
@@ -36982,7 +36982,7 @@ $$;
 
 revoke all on function public.fn_superficie_do_fluxo_imutavel() from public;
 revoke execute on function public.fn_superficie_do_fluxo_imutavel() from crm_anonymous;
-revoke execute on function public.fn_superficie_do_fluxo_imutavel() from crm_user;
+revoke execute on function public.fn_superficie_do_fluxo_imutavel() from crm_authenticated;
 
 drop trigger if exists trg_superficie_do_fluxo_imutavel on public.followup_flow_pointers;
 create trigger trg_superficie_do_fluxo_imutavel
@@ -37036,7 +37036,7 @@ $$;
 
 revoke all on function public.fn_contato_encerra_roteiro_com_humano_ou_opt_out() from public;
 revoke execute on function public.fn_contato_encerra_roteiro_com_humano_ou_opt_out() from crm_anonymous;
-revoke execute on function public.fn_contato_encerra_roteiro_com_humano_ou_opt_out() from crm_user;
+revoke execute on function public.fn_contato_encerra_roteiro_com_humano_ou_opt_out() from crm_authenticated;
 
 drop trigger if exists trg_contato_encerra_roteiro_com_humano_ou_opt_out on public.contacts;
 create trigger trg_contato_encerra_roteiro_com_humano_ou_opt_out
@@ -37098,8 +37098,8 @@ $$;
 
 revoke all on function public.fn_encerrar_roteiros_vencidos(int) from public;
 revoke execute on function public.fn_encerrar_roteiros_vencidos(int) from crm_anonymous;
-revoke execute on function public.fn_encerrar_roteiros_vencidos(int) from crm_user;
-grant execute on function public.fn_encerrar_roteiros_vencidos(int) to crm_platform;
+revoke execute on function public.fn_encerrar_roteiros_vencidos(int) from crm_authenticated;
+grant execute on function public.fn_encerrar_roteiros_vencidos(int) to crm_service;
 
 -- ---- a conversa fica com quem atendeu, ajuste por empresa (migration 0396) ----
 -- 0396 — "A conversa fica com quem atendeu": ajuste por empresa, DESLIGADO por
@@ -37192,8 +37192,8 @@ begin
  update public.messages set service_revision=c.service_revision,demanda_id=d.id,demanda_revision=d.revision
   where id=m.id and organization_id=c.organization_id;
 end; $$;
-revoke execute on function public.fn_service_inbound(uuid) from public,crm_anonymous,crm_user;
-grant execute on function public.fn_service_inbound(uuid) to crm_platform;
+revoke execute on function public.fn_service_inbound(uuid) from public,crm_anonymous,crm_authenticated;
+grant execute on function public.fn_service_inbound(uuid) to crm_service;
 
 -- ---- o negócio que nasce da conversa nasce na moeda da organização (migration 0400) ----
 --
@@ -37253,7 +37253,7 @@ end;
 $$;
 
 revoke execute on function public.fn_nascer_lead_da_conversa(uuid, uuid, uuid, uuid, text, text, jsonb, text[]) from public, crm_anonymous;
-grant  execute on function public.fn_nascer_lead_da_conversa(uuid, uuid, uuid, uuid, text, text, jsonb, text[]) to crm_user, crm_platform;
+grant  execute on function public.fn_nascer_lead_da_conversa(uuid, uuid, uuid, uuid, text, text, jsonb, text[]) to crm_authenticated, crm_service;
 
 -- O que já nasceu errado. Só negócio SEM valor: sem valor, a moeda não diz nada
 -- e alinhar não muda número nenhum. Negócio COM valor fica como está — ali a
@@ -37384,7 +37384,7 @@ begin
 end;
 $$;
 
-revoke execute on function public.fn_lead_so_liga_a_propria_empresa() from public, crm_anonymous, crm_user;
+revoke execute on function public.fn_lead_so_liga_a_propria_empresa() from public, crm_anonymous, crm_authenticated;
 
 comment on function public.fn_lead_so_liga_a_propria_empresa() is
   'Gatilho de crm_leads (migration 0403): contact_id e owner_user_id só apontam para a própria organização. No UPDATE só confere o campo que mudou. Erro genérico PT404/PT422, sem dizer se o id existe noutra organização.';
@@ -37437,7 +37437,7 @@ comment on function public.comando_da_conversa(public.conversations)
   is 'Campo calculado exposto pelo PostgREST: ?select=comando_da_conversa e ?comando_da_conversa=in.(...). Resolve o contato e carimba now(); a regra em si é fn_comando_da_conversa. SECURITY DEFINER desde a 0404 (issue #1571: a contagem das abas reavaliava a RLS de contacts 2x por conversa); parâmetro SEM NOME de propósito — com nome a PostgREST a exporia em /rpc, e ali uma linha fabricada leria force_human/is_blocked de outro tenant.';
 
 revoke execute on function public.comando_da_conversa(public.conversations) from public, crm_anonymous;
-grant  execute on function public.comando_da_conversa(public.conversations) to crm_user, crm_platform;
+grant  execute on function public.comando_da_conversa(public.conversations) to crm_authenticated, crm_service;
 
 notify pgrst, 'reload schema';
 
@@ -37632,12 +37632,12 @@ begin
 end;
 $$;
 
-revoke execute on function public.fn_definir_logo_por_tema_da_organizacao(uuid, uuid, text, text) from public, crm_anonymous, crm_user;
-grant execute on function public.fn_definir_logo_por_tema_da_organizacao(uuid, uuid, text, text) to crm_platform;
-revoke execute on function public.fn_definir_logo_da_organizacao(uuid, uuid, text) from public, crm_anonymous, crm_user;
-grant execute on function public.fn_definir_logo_da_organizacao(uuid, uuid, text) to crm_platform;
-revoke execute on function public.fn_definir_marca_da_organizacao(uuid, uuid, jsonb) from public, crm_anonymous, crm_user;
-grant execute on function public.fn_definir_marca_da_organizacao(uuid, uuid, jsonb) to crm_platform;
+revoke execute on function public.fn_definir_logo_por_tema_da_organizacao(uuid, uuid, text, text) from public, crm_anonymous, crm_authenticated;
+grant execute on function public.fn_definir_logo_por_tema_da_organizacao(uuid, uuid, text, text) to crm_service;
+revoke execute on function public.fn_definir_logo_da_organizacao(uuid, uuid, text) from public, crm_anonymous, crm_authenticated;
+grant execute on function public.fn_definir_logo_da_organizacao(uuid, uuid, text) to crm_service;
+revoke execute on function public.fn_definir_marca_da_organizacao(uuid, uuid, jsonb) from public, crm_anonymous, crm_authenticated;
+grant execute on function public.fn_definir_marca_da_organizacao(uuid, uuid, jsonb) to crm_service;
 notify pgrst, 'reload schema';
 
 -- ---- a fusão de fichas herda a identidade social (migration 0407, issue #1455) ----
@@ -37970,7 +37970,7 @@ end;
 $function$;
 
 revoke execute on function public.fn_mesclar_contatos(uuid, uuid, uuid[]) from public, crm_anonymous;
-grant execute on function public.fn_mesclar_contatos(uuid, uuid, uuid[]) to crm_user, crm_platform;
+grant execute on function public.fn_mesclar_contatos(uuid, uuid, uuid[]) to crm_authenticated, crm_service;
 notify pgrst, 'reload schema';
 
 
@@ -38017,8 +38017,8 @@ end;
 $$;
 revoke all    on function public.fn_expurgar_prospeccao_vencida(int,int) from public;
 revoke execute on function public.fn_expurgar_prospeccao_vencida(int,int) from crm_anonymous;
-revoke execute on function public.fn_expurgar_prospeccao_vencida(int,int) from crm_user;
-grant  execute on function public.fn_expurgar_prospeccao_vencida(int,int) to crm_platform;
+revoke execute on function public.fn_expurgar_prospeccao_vencida(int,int) from crm_authenticated;
+grant  execute on function public.fn_expurgar_prospeccao_vencida(int,int) to crm_service;
 
 create index if not exists prospecting_candidates_expira_idx
   on public.prospecting_candidates ((coalesce(attempted_at, created_at)))
@@ -38087,13 +38087,13 @@ with (security_invoker = true) as
 -- de acompanhar a tabela — sem `base_url` aqui, a view nova responderia
 -- "permission denied for table ai_provider_credentials" para todo manager, e a
 -- tela de Credenciais viraria `[]`. `base_url` não é segredo: é um endpoint.
-revoke select on public.ai_provider_credentials from crm_user, crm_anonymous;
+revoke select on public.ai_provider_credentials from crm_authenticated, crm_anonymous;
 grant select (
   id, organization_id, provider, label, api_key_last4, validated_at,
   validation_error, models_available, is_active, created_by, created_at, updated_at,
   base_url
-) on public.ai_provider_credentials to crm_user;
-grant select on public.ai_provider_credentials_safe to crm_user;
+) on public.ai_provider_credentials to crm_authenticated;
+grant select on public.ai_provider_credentials_safe to crm_authenticated;
 
 -- O PostgREST guarda o schema em cache; sem isto a coluna nova só aparece no
 -- próximo reload.
@@ -38144,18 +38144,18 @@ begin
      where n.nspname = 'public'
        and p.prosecdef
   loop
-    tinha_auth := to_regrole('crm_user') is not null
-                  and has_function_privilege('crm_user', f.oid, 'EXECUTE');
-    tinha_service := to_regrole('crm_platform') is not null
-                     and has_function_privilege('crm_platform', f.oid, 'EXECUTE');
+    tinha_auth := to_regrole('crm_authenticated') is not null
+                  and has_function_privilege('crm_authenticated', f.oid, 'EXECUTE');
+    tinha_service := to_regrole('crm_service') is not null
+                     and has_function_privilege('crm_service', f.oid, 'EXECUTE');
 
     execute format('revoke execute on function %s from public, crm_anonymous', f.assinatura);
 
     if tinha_auth then
-      execute format('grant execute on function %s to crm_user', f.assinatura);
+      execute format('grant execute on function %s to crm_authenticated', f.assinatura);
     end if;
     if tinha_service then
-      execute format('grant execute on function %s to crm_platform', f.assinatura);
+      execute format('grant execute on function %s to crm_service', f.assinatura);
     end if;
   end loop;
 end $$;
@@ -38164,17 +38164,17 @@ end $$;
 -- cabe varredura — `authenticated` PRECISA de EXECUTE nos helpers de RLS e em
 -- `retrieve_top_k_chunks` (num install fresco ele tem). É julgamento por função,
 -- e o alvo de cada linha é o valor que um install fresco produz, medido.
-revoke execute on function public.fn_audit_log_row() from crm_user;
-revoke execute on function public.fn_decrypt_oauth(bytea) from crm_user;
-revoke execute on function public.fn_encrypt_oauth(text) from crm_user;
-revoke execute on function public.fn_lgpd_cascade_redact_contact(uuid, uuid, uuid) from crm_user;
-revoke execute on function public.fn_update_budget_consumption() from crm_user;
+revoke execute on function public.fn_audit_log_row() from crm_authenticated;
+revoke execute on function public.fn_decrypt_oauth(bytea) from crm_authenticated;
+revoke execute on function public.fn_encrypt_oauth(text) from crm_authenticated;
+revoke execute on function public.fn_lgpd_cascade_redact_contact(uuid, uuid, uuid) from crm_authenticated;
+revoke execute on function public.fn_update_budget_consumption() from crm_authenticated;
 
-grant execute on function public.fn_audit_log_row() to crm_platform;
-grant execute on function public.fn_decrypt_oauth(bytea) to crm_platform;
-grant execute on function public.fn_encrypt_oauth(text) to crm_platform;
-grant execute on function public.fn_lgpd_cascade_redact_contact(uuid, uuid, uuid) to crm_platform;
-grant execute on function public.fn_update_budget_consumption() to crm_platform;
+grant execute on function public.fn_audit_log_row() to crm_service;
+grant execute on function public.fn_decrypt_oauth(bytea) to crm_service;
+grant execute on function public.fn_encrypt_oauth(text) to crm_service;
+grant execute on function public.fn_lgpd_cascade_redact_contact(uuid, uuid, uuid) to crm_service;
+grant execute on function public.fn_update_budget_consumption() to crm_service;
 
 
 -- ---- Criador provisório sai na entrega (migration 0237) ----
@@ -38213,7 +38213,7 @@ create table if not exists public.platform_settings (
 );
 
 comment on table public.platform_settings is
-  'Configuração da INSTALAÇÃO (não do tenant) — linha única id=1. Hoje a política de cadastro e o COMPORTAMENTO (orçamento de IA, assinatura de webhook, divulgação de pagamento, conferência de promessa). Coluna nula = a instalação não opinou, e quem responde é o arquivo de ambiente. Lida/escrita apenas server-side (crm_platform); a ausência da linha significa o default. Ver lib/auth/politica-de-cadastro.ts e lib/instalacao/comportamento.ts.';
+  'Configuração da INSTALAÇÃO (não do tenant) — linha única id=1. Hoje a política de cadastro e o COMPORTAMENTO (orçamento de IA, assinatura de webhook, divulgação de pagamento, conferência de promessa). Coluna nula = a instalação não opinou, e quem responde é o arquivo de ambiente. Lida/escrita apenas server-side (crm_service); a ausência da linha significa o default. Ver lib/auth/politica-de-cadastro.ts e lib/instalacao/comportamento.ts.';
 
 comment on column public.platform_settings.signup_mode is
   'aberto = qualquer pessoa cria conta em /signup (comportamento histórico). so_convite = só quem chega com convite válido; sem convite, /signup recusa com tela e /auth/confirm NÃO provisiona organização.';
@@ -38224,8 +38224,8 @@ alter table public.platform_settings enable row level security;
 -- não pertence a organização nenhuma, então não há predicado de tenant que a
 -- isole. RLS ligada sem policy = ninguém alcança pela REST; quem lê é o
 -- service_role, que a bypassa, e só a partir do servidor.
-revoke all on public.platform_settings from crm_anonymous, crm_user;
-grant select, insert, update on public.platform_settings to crm_platform;
+revoke all on public.platform_settings from crm_anonymous, crm_authenticated;
+grant select, insert, update on public.platform_settings to crm_service;
 
 drop trigger if exists trg_platform_settings_touch on public.platform_settings;
 create trigger trg_platform_settings_touch
@@ -38320,8 +38320,8 @@ create index if not exists registration_requests_pending_idx
   where status = 'pending';
 
 alter table public.registration_requests enable row level security;
-revoke all on public.registration_requests from crm_anonymous, crm_user;
-grant select, insert, update on public.registration_requests to crm_platform;
+revoke all on public.registration_requests from crm_anonymous, crm_authenticated;
+grant select, insert, update on public.registration_requests to crm_service;
 
 drop trigger if exists trg_registration_requests_touch on public.registration_requests;
 create trigger trg_registration_requests_touch
@@ -38357,7 +38357,7 @@ create table if not exists public.platform_meta_app (
 );
 
 comment on table public.platform_meta_app is
-  'O App da Meta DESTA INSTALAÇÃO (singleton): App Secret que assina a entrega do webhook e verify token que responde ao handshake. Server-side only: RLS ligada sem policies e grants revogados de crm_anonymous/crm_user — o PostgREST não a serve. Nenhum dos dois segredos volta ao browser; a tela devolve apenas se existem.';
+  'O App da Meta DESTA INSTALAÇÃO (singleton): App Secret que assina a entrega do webhook e verify token que responde ao handshake. Server-side only: RLS ligada sem policies e grants revogados de crm_anonymous/crm_authenticated — o PostgREST não a serve. Nenhum dos dois segredos volta ao browser; a tela devolve apenas se existem.';
 comment on column public.platform_meta_app.app_secret_encrypted is
   'Cifrado por fn_encrypt_oauth (pgp_sym_encrypt/aes256). Nunca gravar em claro: sem a chave mestra o save recusa. Quem tem este valor assina uma entrega de webhook válida com dados inventados.';
 comment on column public.platform_meta_app.verify_token_encrypted is
@@ -38367,8 +38367,8 @@ comment on column public.platform_meta_app.verify_token_created_at is
 
 alter table public.platform_meta_app enable row level security;
 
-revoke all on public.platform_meta_app from crm_anonymous, crm_user;
-grant select, insert, update on public.platform_meta_app to crm_platform;
+revoke all on public.platform_meta_app from crm_anonymous, crm_authenticated;
+grant select, insert, update on public.platform_meta_app to crm_service;
 
 drop trigger if exists trg_platform_meta_app_updated_at on public.platform_meta_app;
 create trigger trg_platform_meta_app_updated_at
@@ -38560,7 +38560,7 @@ create table if not exists public.platform_config (
 );
 
 comment on table public.platform_config is
-  'Configuração da INSTALAÇÃO editável pela tela (não do tenant): uma linha por variável, nomeada como a própria variável de ambiente. Linha ausente = usa o .env. Segredo guarda envelope AES-256-GCM cru (lib/crypto/aes_gcm.ts, chave em AI_CRED_AES_KEY, fora do banco de propósito — ver o cabeçalho da migration 0341); knob guarda texto. Lida/escrita só server-side por crm_platform. Ver lib/instalacao/config.ts.';
+  'Configuração da INSTALAÇÃO editável pela tela (não do tenant): uma linha por variável, nomeada como a própria variável de ambiente. Linha ausente = usa o .env. Segredo guarda envelope AES-256-GCM cru (lib/crypto/aes_gcm.ts, chave em AI_CRED_AES_KEY, fora do banco de propósito — ver o cabeçalho da migration 0341); knob guarda texto. Lida/escrita só server-side por crm_service. Ver lib/instalacao/config.ts.';
 
 comment on column public.platform_config.semeado_do_env is
   'true = o valor veio do .env por semeadura automática e pode ser re-semeado. false = uma pessoa escreveu pela tela, e o .env NUNCA sobrescreve. Mesma regra de platform_branding.seeded_from_env (0155).';
@@ -38579,8 +38579,8 @@ alter table public.platform_config enable row level security;
 -- alcança TODA tabela criada depois dele — isto é, todo apêndice novo; (B) o
 -- grant que o Postgres dá ao dono. O repositório já registra alguém que
 -- conhecia a doutrina e errou exatamente aqui.
-revoke all on public.platform_config from crm_anonymous, crm_user;
-grant select, insert, update, delete on public.platform_config to crm_platform;
+revoke all on public.platform_config from crm_anonymous, crm_authenticated;
+grant select, insert, update, delete on public.platform_config to crm_service;
 
 drop trigger if exists trg_platform_config_touch on public.platform_config;
 create trigger trg_platform_config_touch
@@ -38810,7 +38810,7 @@ create view public.external_db_connections_safe
   from public.external_db_connections;
 
 revoke all on public.external_db_connections_safe from crm_anonymous;
-grant select on public.external_db_connections_safe to crm_user;
+grant select on public.external_db_connections_safe to crm_authenticated;
 
 drop trigger if exists trg_external_db_connections_updated_at on public.external_db_connections;
 create trigger trg_external_db_connections_updated_at

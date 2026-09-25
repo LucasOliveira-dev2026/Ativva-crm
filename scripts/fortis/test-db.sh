@@ -70,7 +70,7 @@ select (select exists (select 1 from pg_proc p, unnest(coalesce(p.proacl, '{}'::
                         where p.proname = 'fn_sonda_fidelidade' and split_part(a::text, '=', 1) = 'crm_anonymous'))
     || ':' || (select count(distinct a.grantee) from pg_class c, aclexplode(c.relacl) a
                 where c.oid = 'public.sonda_fidelidade'::regclass and a.privilege_type = 'DELETE'
-                  and a.grantee in ('crm_anonymous'::regrole, 'crm_user'::regrole, 'crm_platform'::regrole));
+                  and a.grantee in ('crm_anonymous'::regrole, 'crm_authenticated'::regrole, 'crm_service'::regrole));
 drop table public.sonda_fidelidade;
 drop function public.fn_sonda_fidelidade();
 SQL

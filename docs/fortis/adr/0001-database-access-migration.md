@@ -48,10 +48,10 @@ A camada nova (`lib/db/`) expõe só dois escopos, com o mesmo contrato do
 ATIVVA:
 
 - `runTenantTransaction({ userId, companyId, aal, sessionId }, fn)`:
-  `SET LOCAL ROLE crm_user` + `set_config` de `app.current_user_id`,
+  `SET LOCAL ROLE crm_authenticated` + `set_config` de `app.current_user_id`,
   `app.current_company_id`, `app.current_aal`, `app.current_session_id`.
   Substitui o cliente **server**; a RLS existente continua sendo a autoridade.
-- `runPlatformTransaction(reason, fn)`: `SET LOCAL ROLE crm_platform`.
+- `runPlatformTransaction(reason, fn)`: `SET LOCAL ROLE crm_service`.
   Substitui o cliente **admin**; exige um motivo tipado (para auditoria e para
   o inventário de acessos que ignoram RLS). Reduzir esses 375 arquivos é
   trabalho contínuo, medido pelo gate, não pré-requisito da troca.

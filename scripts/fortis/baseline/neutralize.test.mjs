@@ -37,8 +37,8 @@ grant select on t to authenticated, service_role;
 if current_user not in('postgres','service_role') then
 ALTER FUNCTION f() OWNER TO "postgres";`);
   assert.match(sql, /TO "crm_anonymous";/);
-  assert.match(sql, /to crm_user, crm_platform;/);
-  assert.match(sql, /not in\('crm_owner','postgres','crm_platform'\)/);
+  assert.match(sql, /to crm_authenticated, crm_service;/);
+  assert.match(sql, /not in\('crm_owner','postgres','crm_service'\)/);
   assert.match(sql, /OWNER TO "crm_owner";/);
 });
 
@@ -49,7 +49,7 @@ test('role words inside SQL comments are left as history', () => {
 
 test('role-level lock_timeout moves to the platform prelude', () => {
   const { sql } = neutralize("    execute 'alter role authenticated set lock_timeout = ''4s''';");
-  assert.match(sql, /null; -- Fortis: set on crm_app\/crm_user by database\/platform/);
+  assert.match(sql, /null; -- Fortis: set on crm_app\/crm_authenticated by database\/platform/);
 });
 
 test('an unmapped Supabase platform object is refused, not shipped', () => {
@@ -69,8 +69,8 @@ await c.query("insert into auth.users (id, email) values ($1, $2)");
 // comentário: authenticated fica
 const conn = "postgresql://postgres:postgres@127.0.0.1/postgres";`);
   assert.match(text, /select test_db\.contexto_do_usuario\( \$1, true\)/);
-  assert.match(text, /set local role crm_user/);
-  assert.match(text, /user \? "crm_user" : "crm_platform"/);
+  assert.match(text, /set local role crm_authenticated/);
+  assert.match(text, /user \? "crm_authenticated" : "crm_service"/);
   assert.match(text, /insert into identity\.users/);
   assert.match(text, /comentário: authenticated fica/);
   assert.match(text, /postgres:postgres@127\.0\.0\.1\/postgres/);
@@ -94,11 +94,42 @@ test('role words after an SQL comment marker stay as written', () => {
 
 test('the owner literal keeps the cluster superuser privileged', () => {
   const { sql } = neutralize("if current_user not in('postgres','service_role') then");
-  assert.match(sql, /not in\('crm_owner','postgres','crm_platform'\)/);
+  assert.match(sql, /not in\('crm_owner','postgres','crm_service'\)/);
 });
 
 test('test codemod points schema readers at the Fortis baseline and maps the login role', () => {
   const { text } = transformTestSource('readFileSync("supabase/baseline.sql"); const P = ["authenticator", "authenticated"];');
   assert.match(text, /database\/baseline\/baseline\.sql/);
-  assert.match(text, /\["crm_app", "crm_user"\]/);
+  assert.match(text, /\["crm_app", "crm_authenticated"\]/);
+});
+
+test('test codemod maps every path form of the upstream schema sources', () => {
+  const { text } = transformTestSource(`join(process.cwd(), "supabase", "baseline.sql");
+join(ROOT, 'supabase', 'migrations', f);
+readFileSync("supabase/migrations/20260718150000_0041_x.sql");`);
+  assert.match(text, /join\(process\.cwd\(\), "database", "baseline", "baseline\.sql"\)/);
+  assert.match(text, /join\(ROOT, 'database', 'upstream-migrations', f\)/);
+  assert.match(text, /"database\/upstream-migrations\/20260718150000_0041_x\.sql"/);
+});
+
+test('object keys named after roles are kept; casts are still renamed', () => {
+  const { text } = transformTestSource(`expect(r).toEqual({ anon: false, authenticated: true });
+select 'anon'::regrole, "service_role"::regrole;`);
+  assert.match(text, /\{ anon: false, authenticated: true \}/);
+  assert.match(text, /'crm_anonymous'::regrole, "crm_service"::regrole/);
+});
+
+test('role words inside camelCase identifiers and role:privilege strings', () => {
+  const { text } = transformTestSource(`const p = { anonExecuta: c[7] === "true" }; if (p.anonExecuta) {}
+expect(s).toBe("anon:INSERT,authenticated:SELECT");`);
+  assert.match(text, /\{ anonExecuta: c\[7\]/);
+  assert.match(text, /p\.anonExecuta/);
+  assert.match(text, /"crm_anonymous:INSERT,crm_authenticated:SELECT"/);
+});
+
+test('test codemod maps regex spellings of auth.uid()', () => {
+  const { text } = transformTestSource(`from 'auth\\\\.uid\\\\(\\\\) is not null'
+f.src ~* 'auth[.]uid[(][)]'`);
+  assert.match(text, /fortis\\\\\.current_user_id\\\\\(\\\\\) is not null/);
+  assert.match(text, /'fortis\[\.\]current_user_id\[\(\]\[\)\]'/);
 });

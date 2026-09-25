@@ -42,10 +42,15 @@ create trigger fixture_external_identity
 -- Upstream tests create probe functions/tables as the session user
 -- (`postgres` here), relying on the default ACL that Supabase gives objects
 -- created by its owner. Same default for the test superuser.
-alter default privileges for role postgres in schema public grant all on functions to crm_anonymous, crm_user, crm_platform;
+alter default privileges for role postgres in schema public grant all on functions to crm_anonymous, crm_authenticated, crm_service;
 alter default privileges for role postgres in schema public revoke execute on functions from public;
-alter default privileges for role postgres in schema public grant all on tables to crm_anonymous, crm_user, crm_platform;
-alter default privileges for role postgres in schema public grant all on sequences to crm_anonymous, crm_user, crm_platform;
+alter default privileges for role postgres in schema public grant all on tables to crm_anonymous, crm_authenticated, crm_service;
+alter default privileges for role postgres in schema public grant all on sequences to crm_anonymous, crm_authenticated, crm_service;
+-- Upstream's schema owner WAS the test session user (postgres). Here the
+-- definer functions run as crm_owner, so in the throwaway test cluster only,
+-- crm_owner is a member of postgres: it acts as the owner of the probe
+-- objects the tests create, without adding entries to their ACLs.
+grant postgres to crm_owner;
 
-grant usage on schema test_db to crm_anonymous, crm_user, crm_platform;
-grant execute on all functions in schema test_db to crm_anonymous, crm_user, crm_platform;
+grant usage on schema test_db to crm_anonymous, crm_authenticated, crm_service;
+grant execute on all functions in schema test_db to crm_anonymous, crm_authenticated, crm_service;

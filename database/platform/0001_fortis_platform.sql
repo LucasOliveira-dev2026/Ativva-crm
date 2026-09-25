@@ -5,7 +5,7 @@
 -- the schema used to get from the Supabase platform — with Fortis semantics:
 --
 --   Supabase                         Fortis (this file)
---   anon / authenticated / service_role  crm_anonymous / crm_user / crm_platform
+--   anon / authenticated / service_role  crm_anonymous / crm_authenticated / crm_service
 --   authenticator (PostgREST login)  crm_app (login, NOINHERIT: must SET ROLE)
 --   postgres (schema owner)          crm_owner
 --   auth.uid() / auth.jwt()          fortis.current_user_id() / current_aal() /
@@ -14,7 +14,7 @@
 --   storage.objects / buckets        object_storage.* (metadata; bytes in S3)
 --
 -- The request context follows the ATIVVA contract: the data layer opens a
--- transaction, `SET LOCAL ROLE crm_user` and `set_config(..., true)` for
+-- transaction, `SET LOCAL ROLE crm_authenticated` and `set_config(..., true)` for
 -- app.current_user_id and app.current_company_id (same GUC name as ATIVVA).
 -- Nothing is readable before that: crm_app itself holds no privileges.
 --
@@ -24,7 +24,7 @@ do $$
 declare
   r text;
 begin
-  foreach r in array array['crm_owner', 'crm_anonymous', 'crm_user', 'crm_platform', 'crm_app'] loop
+  foreach r in array array['crm_owner', 'crm_anonymous', 'crm_authenticated', 'crm_service', 'crm_app'] loop
     if to_regrole(r) is null then
       execute format('create role %I nologin', r);
     end if;
@@ -34,18 +34,18 @@ $$;
 
 -- Parity with service_role: the platform role bypasses RLS. It is reachable
 -- only through an explicit SET LOCAL ROLE in the data layer's platform scope.
-alter role crm_platform bypassrls;
+alter role crm_service bypassrls;
 alter role crm_anonymous nobypassrls;
-alter role crm_user nobypassrls;
+alter role crm_authenticated nobypassrls;
 alter role crm_app nobypassrls noinherit;
 alter role crm_owner nobypassrls;
-grant crm_anonymous, crm_user, crm_platform to crm_app;
+grant crm_anonymous, crm_authenticated, crm_service to crm_app;
 
 -- API requests wait at most 4s for a lock (upstream migration 0243, set there
 -- on PostgREST's `authenticator` and on `authenticated`). Platform work that
 -- may wait resets it with SET LOCAL in the data layer's platform scope.
 alter role crm_app set lock_timeout = '4s';
-alter role crm_user set lock_timeout = '4s';
+alter role crm_authenticated set lock_timeout = '4s';
 
 -- crm_owner owns the schema (like `ativva` in the ATIVVA database).
 grant create, usage on schema public to crm_owner;
@@ -61,10 +61,10 @@ create extension if not exists pg_trgm with schema public;
 -- The schema's security model assumes these default ACLs (Supabase bootstraps
 -- them before any user SQL; the upstream hardening revokes on top of them and
 -- its invariant suite measures the result). Reproduced for crm_owner.
-alter default privileges for role crm_owner in schema public grant all on functions to crm_anonymous, crm_user, crm_platform;
+alter default privileges for role crm_owner in schema public grant all on functions to crm_anonymous, crm_authenticated, crm_service;
 alter default privileges for role crm_owner in schema public revoke execute on functions from public;
-alter default privileges for role crm_owner in schema public grant all on tables to crm_anonymous, crm_user, crm_platform;
-alter default privileges for role crm_owner in schema public grant all on sequences to crm_anonymous, crm_user, crm_platform;
+alter default privileges for role crm_owner in schema public grant all on tables to crm_anonymous, crm_authenticated, crm_service;
+alter default privileges for role crm_owner in schema public grant all on sequences to crm_anonymous, crm_authenticated, crm_service;
 
 -- ---------------------------------------------------------------- context --
 create schema if not exists fortis authorization crm_owner;
@@ -96,9 +96,9 @@ alter function fortis.current_aal() owner to crm_owner;
 alter function fortis.current_company_id() owner to crm_owner;
 alter function fortis.current_session_id() owner to crm_owner;
 revoke all on schema fortis from public;
-grant usage on schema fortis to crm_anonymous, crm_user, crm_platform;
+grant usage on schema fortis to crm_anonymous, crm_authenticated, crm_service;
 revoke execute on all functions in schema fortis from public;
-grant execute on all functions in schema fortis to crm_anonymous, crm_user, crm_platform;
+grant execute on all functions in schema fortis to crm_anonymous, crm_authenticated, crm_service;
 
 -- --------------------------------------------------------------- identity --
 -- One row per person known to the CRM, keyed by the Keycloak subject. The
@@ -142,13 +142,13 @@ alter table identity.users owner to crm_owner;
 alter table identity.sessions owner to crm_owner;
 alter table identity.mfa_factors owner to crm_owner;
 revoke all on schema identity from public;
-grant usage on schema identity to crm_anonymous, crm_user, crm_platform;
+grant usage on schema identity to crm_anonymous, crm_authenticated, crm_service;
 -- Same exposure as auth.users had: readable by the definer functions (owner),
 -- by the platform role, and SELECT for the API roles (FK checks and the
 -- upstream `select ... from auth.users` reads). Writes only by the platform.
-revoke all on all tables in schema identity from public, crm_anonymous, crm_user;
-grant select on all tables in schema identity to crm_anonymous, crm_user;
-grant all on all tables in schema identity to crm_platform;
+revoke all on all tables in schema identity from public, crm_anonymous, crm_authenticated;
+grant select on all tables in schema identity to crm_anonymous, crm_authenticated;
+grant all on all tables in schema identity to crm_service;
 
 -- --------------------------------------------------------- object storage --
 -- Metadata registry of the Fortis object store (S3/MinIO). Bytes never live
@@ -201,8 +201,8 @@ alter function object_storage.filename(text) owner to crm_owner;
 alter function object_storage.extension(text) owner to crm_owner;
 alter table object_storage.objects enable row level security;
 revoke all on schema object_storage from public;
-grant usage on schema object_storage to crm_anonymous, crm_user, crm_platform;
-grant select on object_storage.buckets to crm_anonymous, crm_user;
-grant select, insert, update, delete on object_storage.objects to crm_anonymous, crm_user;
-grant all on all tables in schema object_storage to crm_platform;
-grant execute on all functions in schema object_storage to crm_anonymous, crm_user, crm_platform;
+grant usage on schema object_storage to crm_anonymous, crm_authenticated, crm_service;
+grant select on object_storage.buckets to crm_anonymous, crm_authenticated;
+grant select, insert, update, delete on object_storage.objects to crm_anonymous, crm_authenticated;
+grant all on all tables in schema object_storage to crm_service;
+grant execute on all functions in schema object_storage to crm_anonymous, crm_authenticated, crm_service;

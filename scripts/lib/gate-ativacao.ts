@@ -518,12 +518,12 @@ export async function checkRespondiAutoriza(ctx: CtxAtivacao): Promise<Resultado
   );
 
   const { rows: g } = await ctx.pool.query(
-    `select has_column_privilege('service_role', 'public.contacts', 'ai_authorized_at', 'UPDATE') as pode`,
+    `select has_column_privilege('crm_service', 'public.contacts', 'ai_authorized_at', 'UPDATE') as pode`,
   );
   if (g[0]?.pode === false) {
-    return { status: "FAIL", detalhe: "service_role NÃO tem UPDATE em contacts.ai_authorized_at — o webhook não conseguiria autorizar", linhas };
+    return { status: "FAIL", detalhe: "crm_service NÃO tem UPDATE em contacts.ai_authorized_at — o webhook não conseguiria autorizar", linhas };
   }
-  linhas.push("service_role pode UPDATE contacts.ai_authorized_at — autorização individual funciona");
+  linhas.push("crm_service pode UPDATE contacts.ai_authorized_at — autorização individual funciona");
   return {
     status: rows.length === 0 ? "WARN" : "PASS",
     detalhe:

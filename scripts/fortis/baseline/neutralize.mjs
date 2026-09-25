@@ -41,10 +41,11 @@ export const PLATFORM_RULES = [
   ['realtime-publication', /\bsupabase_realtime\b/g, 'crm_realtime'],
   // Roles: Supabase API roles → Fortis CRM roles (see database/platform).
   // Quotes around the name are kept, so SQL identifiers and JS strings survive;
-  // a column alias (`... as anon`) is a result key read by code, not a role.
-  ['role-anon', /(?<![a-z_.]|\b[aA][sS]\s+)("?)anon\1(?![a-z_])/g, '$1crm_anonymous$1'],
-  ['role-authenticated', /(?<![a-z_.]|\b[aA][sS]\s+)("?)authenticated\1(?![a-z_])/g, '$1crm_user$1'],
-  ['role-service', /(?<![a-z_.]|\b[aA][sS]\s+)("?)service_role\1(?![a-z_])/g, '$1crm_platform$1'],
+  // a column alias (`... as anon`) or an object key (`{ anon: … }`) is a
+  // result key read by code, not a role; a cast (`'anon'::regrole`) is a role.
+  ['role-anon', /(?<![A-Za-z0-9_.]|\b[aA][sS]\s+)("?)anon\1(?![A-Za-z0-9_]|\s*:\s)/g, '$1crm_anonymous$1'],
+  ['role-authenticated', /(?<![A-Za-z0-9_.]|\b[aA][sS]\s+)("?)authenticated\1(?![A-Za-z0-9_]|\s*:\s)/g, '$1crm_authenticated$1'],
+  ['role-service', /(?<![A-Za-z0-9_.]|\b[aA][sS]\s+)("?)service_role\1(?![A-Za-z0-9_]|\s*:\s)/g, '$1crm_service$1'],
 ];
 
 /** Rules that only make sense for the schema applied by crm_owner. */
@@ -52,12 +53,12 @@ export const SCHEMA_ONLY_RULES = [
   // Role-level settings belong to the platform, not the schema owner: the
   // upstream 4s lock_timeout for API requests (migration 0243) is set by
   // database/platform/0001_fortis_platform.sql on the Fortis equivalents
-  // (crm_app, the login role, and crm_user). `authenticator` (PostgREST) does
+  // (crm_app, the login role, and crm_authenticated). `authenticator` (PostgREST) does
   // not exist on Fortis, so its other guarded blocks are no-ops.
   [
     'api-lock-timeout',
     /execute 'alter role (?:authenticator|authenticated) set lock_timeout = ''4s''';/g,
-    'null; -- Fortis: set on crm_app/crm_user by database/platform (migration 0243)',
+    'null; -- Fortis: set on crm_app/crm_authenticated by database/platform (migration 0243)',
   ],
   ['owner-quoted', /"postgres"/g, '"crm_owner"'],
   // Supabase's `postgres` was both schema owner and administrator; on Fortis

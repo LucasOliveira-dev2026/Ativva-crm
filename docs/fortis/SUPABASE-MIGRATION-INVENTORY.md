@@ -42,8 +42,8 @@ Um arquivo pode ter mais de uma classificação. `DELETE_INFRA_ONLY` remove infr
 
 | Risco | Arquivos |
 | --- | --- |
-| ALTO | 1197 |
-| MÉDIO | 664 |
+| ALTO | 1196 |
+| MÉDIO | 665 |
 | BAIXO | 446 |
 
 ## Runtime (app, lib, components, hooks, workers)

@@ -12,7 +12,8 @@ const TEXT = /\.(ts|tsx|mjs|cjs|js|jsx|json|sql|sh|md|mdx|yml|yaml|toml|txt|conf
 // The migration's own tooling, docs and ODD task records name Supabase on purpose; `database/`
 // is guarded separately by scripts/fortis/baseline/build.mjs --check, which
 // refuses any Supabase platform object in the applied schema.
-const SELF = /^(scripts\/fortis\/|docs\/fortis\/|database\/|odd\/)/;
+const SELF =
+  /^(scripts\/fortis\/|docs\/fortis\/|database\/|odd\/|\.github\/workflows\/fortis-platform\.yml$|vitest\.db\.fortis\.config\.ts$)/;
 // A file reached by this many entry points is shared plumbing, not a feature.
 const SHARED_FANOUT = 40;
 
