@@ -12,7 +12,7 @@ INFRAESTRUTURA SUPABASE / GENÉRICA DUPLICADA → SUBSTITUIR PELA PLATAFORMA FOR
 | Item            | Valor                                                                 |
 | --------------- | --------------------------------------------------------------------- |
 | Upstream        | `upstream` → https://github.com/melgarafael/DeskcommCRM (branch `main`) |
-| Fork            | `origin` → `Fortis-solucoes/ativva-crm`                               |
+| Fork            | `origin` → `LucasOliveira-dev2026/ativva-crm` (a org `Fortis-solucoes` não estava acessível) |
 | Base do fork    | ver [`upstream.json`](upstream.json) (SHA, data, release mais próxima) |
 | Licença         | MIT, `Copyright (c) 2026 Rafael Melgaço` — o `LICENSE` original é mantido intacto |
 | Branch de trabalho | `feat/fortis-platform-migration` (nunca `main`)                    |
