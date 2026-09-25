@@ -200,6 +200,9 @@ pnpm test:db   # upstream reference harness (Supabase stubs), same commit
 - `pdf-extractor` (D17): RED reproduced in the full run and standalone
   (`m.extractPdfText is not a function`), 16/16 GREEN after; sabotage of
   `estrategiaPadrao()` → both strategy cases RED, caught; product restored.
+- **Full unit suite after D17 (on `73ba361`): 14044/14044 pass, 0 failures,
+  1402 files, exit 0, no `Errors` line** — first fully green unit run of the fork
+  (the upstream base itself had 1 failure).
 - Tests of the rules were written alongside the code (no observed RED phase);
   the quoted `"auth"."users"` / `"auth"."uid"()` rules came from real apply
   failures on pg17 (RED observed through the database).
