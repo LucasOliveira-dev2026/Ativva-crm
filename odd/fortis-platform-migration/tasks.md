@@ -60,8 +60,8 @@ One identity (SSO with ATIVVA), one tenancy model, one operational stack.
       codemod, Fortis DB harness, ratchet gate, CI, ADRs, report — `e64cafa`, `ea79a05`
 - [x] T4 F1 evidence: `pnpm test:db:fortis` full suite **0 failures** (run 4,
       2026-09-25: 2300/2301 pass, 1 skipped, 274 files, exit 0) on `ea79a05`
-- [ ] T5 Sync with upstream `main` (fork `main` = `d1081dc`, 19 commits past base
-      `aaf1b3b`): `git merge upstream/main`, rebuild baseline, reinventory, rerun gates
+- [x] T5 Sync with upstream `main` `d1081dc` (19 commits): merge `38e3644`, regen
+      `11b6385`, unit-suite fix `992cc1e`; invariants and unit suite at the reference
 - [ ] T6 F1b data layer `lib/db` (Prisma 7 + adapter-pg; `runTenantTransaction`
       sets `SET LOCAL ROLE crm_authenticated` + GUCs; `runPlatformTransaction` sets
       `SET LOCAL ROLE crm_service` + `SET LOCAL lock_timeout = 0`)
@@ -133,6 +133,11 @@ One identity (SSO with ATIVVA), one tenancy model, one operational stack.
   role name (`audit-log-sob-o-default-acl…` compares an ordered string).
 - **D14 `scripts/lib/gate-ativacao.ts`** (ops CLI querying the DB) edited in place
   to ask about `crm_service`: it is Fortis-owned now (expect a small sync conflict).
+- **D15 Fortis rule tests are `*.node-test.mjs`** (not `*.test.mjs`): vitest's
+  default include ran them and failed to bundle `node:test`, breaking the upstream
+  unit suite. And the two `fortis-platform.yml` jobs are declared in the upstream
+  map `tests/unit/gatilho-dos-jobs-de-entrega.test.ts` (with `condicao: null`) —
+  a Fortis edit to an upstream unit test (expect a small sync conflict).
 - **D11 Fork location**: `LucasOliveira-dev2026/ativva-crm` (org `Fortis-solucoes`
   unreachable; GitHub App cannot create repos — user created it).
 
@@ -165,6 +170,13 @@ pnpm test:db   # upstream reference harness (Supabase stubs), same commit
   0 failures, 0 failed suites, 274 files, harness exit 0 (`==> test:db:fortis verde`).**
   F1 acceptance met. (2301 vs upstream 2299: the Fortis run counts 2 more cases;
   both suites end with 0 failures.)
+- **After T5 (upstream `d1081dc` merged), invariants: 2318/2319 pass, 1 skipped,
+  0 failures, 276 files, exit 0.**
+- Unit suite after T5, first run: 2 real fork regressions (node:test files picked
+  by vitest; `gatilho-dos-jobs-de-entrega` RED because of the 2 Fortis jobs) +
+  the pre-existing `pdf-extractor`. After D15: **14043/14044 pass, only
+  `tests/unit/pdf-extractor.test.ts` fails (same as the upstream reference), no
+  `Errors` line** — the gatilho test went RED → GREEN (24/24).
 - Tests of the rules were written alongside the code (no observed RED phase);
   the quoted `"auth"."users"` / `"auth"."uid"()` rules came from real apply
   failures on pg17 (RED observed through the database).
@@ -211,10 +223,12 @@ pnpm test:db   # upstream reference harness (Supabase stubs), same commit
 
 ## Next Step
 
-T5: `git merge upstream/main` (no rebase; upstream `d1081dc`, 19 commits, no file
-overlap with the fork — new migrations 0414/0415 append to the baseline, no change
-to `fn_user_org_ids()`), then `node scripts/fortis/baseline/build.mjs`,
-`node scripts/fortis/inventory/generate.mjs`, the ratchet, the rule tests and
-`pnpm test:db:fortis` (full, alone). Update `docs/fortis/upstream.json` base.
+T6 (F1b data layer, ADR-0001): add Prisma 7 + `@prisma/adapter-pg`; create
+`lib/db` with `runTenantTransaction({ userId, companyId, aal, sessionId }, fn)`
+(`SET LOCAL ROLE crm_authenticated` + `app.*` GUCs) and
+`runPlatformTransaction(reason, fn)` (`SET LOCAL ROLE crm_service`,
+`lock_timeout = 0`); TDD against the real Fortis Postgres (RLS isolation between
+2 companies, fail-closed outside the scopes since `crm_app` is NOINHERIT).
+No call-site rewrite yet — that is module-by-module strangling afterwards.
 Note: the ratchet excludes the Fortis-owned `fortis-platform.yml` and
 `vitest.db.fortis.config.ts` (they name Supabase on purpose; CI would fail otherwise).
