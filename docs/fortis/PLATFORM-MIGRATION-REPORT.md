@@ -7,10 +7,10 @@ Data: 2026-09-25 · Branch: `feat/fortis-platform-migration`
 | Item | Valor |
 | --- | --- |
 | Upstream | `melgarafael/DeskcommCRM`, branch padrão `main` |
-| UPSTREAM SHA | `aaf1b3bce1f44a609dbb9740a3c9d57d2a08e989` (2026-09-25 14:25 -03) |
-| Release | `v1.49.0` + 23 commits (tag mais recente: `v1.49.0`) |
+| UPSTREAM SHA | `d1081dc231e1f7b0c6648af2011282d42b92fe85` (2026-09-25 15:44 -03), sincronizado por merge; base do fork: `aaf1b3b` |
+| Release | `v1.49.0` + 42 commits (tag mais recente: `v1.49.0`) |
 | LICENSE | MIT, `Copyright (c) 2026 Rafael Melgaço` — lido no arquivo `LICENSE` do commit base; mantido intacto |
-| Fork | `origin` → `Fortis-solucoes/ativva-crm` · `upstream` → `melgarafael/DeskcommCRM` |
+| Fork | `origin` → `LucasOliveira-dev2026/ativva-crm` · `upstream` → `melgarafael/DeskcommCRM` |
 | Branch CRM | `feat/fortis-platform-migration` |
 | Branch ATIVVA | `feat/crm-integration` criada a partir de `main` (`c5ec95e`), sem código do Deskcomm |
 

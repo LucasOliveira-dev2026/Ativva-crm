@@ -1,6 +1,6 @@
 # Inventário funcional do upstream
 
-> Gerado por `node scripts/fortis/inventory/generate.mjs` sobre o upstream `aaf1b3bce1f4`.
+> Gerado por `node scripts/fortis/inventory/generate.mjs` sobre o upstream `d1081dc231e1`.
 > Não editar à mão: altere as regras em `scripts/fortis/inventory/` e regenere.
 
 **Pontos de entrada: 577** (páginas, rotas de API, crons, server actions, workers) · UNVERIFIED: **0**

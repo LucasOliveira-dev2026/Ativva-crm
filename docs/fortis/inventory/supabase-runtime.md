@@ -324,7 +324,7 @@
 | SB-2f2b9d | `app/api/v1/leads/proposals/route.ts` | serverClient:28 adminClient:29,172 auth:175 db:77,82,106,141 | REPLACE_DB_LAYER + REPLACE_KEYCLOAK | F1–F8/F2 | ALTO | t:crm_lead_activities, t:crm_leads, t:lead_state | PENDING |
 | SB-7be640 | `app/api/v1/leads/reactivations/route.ts` | serverClient:21 db:38 | REPLACE_DB_LAYER | F1–F8 | MÉDIO | t:crm_lead_reactivations | PENDING |
 | SB-721f5d | `app/api/v1/leads/route.ts` | serverClient:12 | REPLACE_DB_LAYER | F1–F8 | MÉDIO |  | PENDING |
-| SB-a823fb | `app/api/v1/lgpd/anonymize/route.ts` | serverClient:37 auth:51 db:70 rpc:115,144 | REPLACE_DB_LAYER + REPLACE_KEYCLOAK | F1–F8/F2 | ALTO | t:contacts, rpc:emit_event, rpc:fn_lgpd_anonymize_contact | PENDING |
+| SB-a823fb | `app/api/v1/lgpd/anonymize/route.ts` | serverClient:42 auth:56 db:75 rpc:120,149 | REPLACE_DB_LAYER + REPLACE_KEYCLOAK | F1–F8/F2 | ALTO | t:contacts, rpc:emit_event, rpc:fn_lgpd_anonymize_contact | PENDING |
 | SB-515f42 | `app/api/v1/lgpd/requests/[id]/approve/route.ts` | adminClient:19,60 db:87,109,167,196 rpc:139 | REPLACE_DB_LAYER | F1–F8 | ALTO | t:idempotency_keys, t:lgpd_requests, rpc:emit_event | PENDING |
 | SB-2f98ea | `app/api/v1/lgpd/requests/[id]/preview/route.ts` | adminClient:18,44 db:48 | REPLACE_DB_LAYER | F1–F8 | ALTO | t:lgpd_requests | PENDING |
 | SB-a8d5f5 | `app/api/v1/lgpd/requests/[id]/route.ts` | adminClient:15,37 storage:82,84 db:41,58,83 | REPLACE_DB_LAYER + REPLACE_STORAGE | F1–F8/F3 | ALTO | t:api_audit_log, t:lgpd_requests | PENDING |
@@ -584,7 +584,7 @@
 | SB-9737f3 | `lib/ai/skills/package.ts` |  | KEEP_DOMAIN_LOGIC | F8 | BAIXO |  | PENDING |
 | SB-ff4bb8 | `lib/api/auth-dual.ts` | sdkImport:27 adminClient:44,123 serverClient:45 | REPLACE_DB_LAYER | F1–F8 | ALTO |  | PENDING |
 | SB-c0b8c2 | `lib/api/client.ts` | adminClient:51 | REPLACE_DB_LAYER | F1–F8 | ALTO |  | PENDING |
-| SB-7b727f | `lib/api/errors.ts` | env:236 | DELETE_INFRA_ONLY | F7–F8 | BAIXO | SUPABASE_DB_URL | PENDING |
+| SB-7b727f | `lib/api/errors.ts` | env:241 | DELETE_INFRA_ONLY | F7–F8 | BAIXO | SUPABASE_DB_URL | PENDING |
 | SB-fed2a9 | `lib/api/idempotency.ts` | sdkImport:82 db:204,231,257,281,296 | REPLACE_DB_LAYER | F1–F8 | MÉDIO | t:idempotency_keys | PENDING |
 | SB-ccc97c | `lib/api/recusa.ts` |  | KEEP_DOMAIN_LOGIC | F8 | BAIXO |  | PENDING |
 | SB-819b5e | `lib/atendimento/origem-automacao.ts` | db:46 | REPLACE_DB_LAYER | F1–F8 | MÉDIO | t:conversations | PENDING |

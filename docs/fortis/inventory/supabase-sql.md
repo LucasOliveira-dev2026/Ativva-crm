@@ -1,4 +1,4 @@
-# Supabase — SQL (217 arquivos)
+# Supabase — SQL (218 arquivos)
 
 | ID | Arquivo | Linha/área | Classificação | Substituto Fortis | Risco | Dependências | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -219,3 +219,4 @@
 | SB-3042a9 | `supabase/migrations/20260924200100_0407_social_identity_na_fusao.sql` | rlsAuthUid:55,58,327 supabaseRoles:344 | REPLACE_RLS | F1 | ALTO |  | PENDING |
 | SB-7914ca | `supabase/migrations/20260924200200_0408_prospeccao_vence_no_cron.sql` | supabaseRoles:75,82 | REPLACE_RLS | F1 | ALTO |  | PENDING |
 | SB-a7d8bc | `supabase/migrations/20260925163550_0413_provedor_personalizado.sql` | supabaseRoles:65,66 | REPLACE_RLS | F1 | ALTO |  | PENDING |
+| SB-72fee5 | `supabase/migrations/20260925170000_0414_redact_unificado_chama_a_cascata.sql` | rlsAuthUid:29,57 supabaseRoles:75 | REPLACE_RLS | F1 | ALTO |  | PENDING |

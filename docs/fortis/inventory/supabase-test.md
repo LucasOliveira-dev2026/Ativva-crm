@@ -1,4 +1,4 @@
-# Supabase — TEST (848 arquivos)
+# Supabase — TEST (851 arquivos)
 
 | ID | Arquivo | Linha/área | Classificação | Substituto Fortis | Risco | Dependências | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -154,6 +154,7 @@
 | SB-ea2088 | `tests/api/agenda-cancelar-agenda-do-colega.test.ts` | sdkImport:11 | DELETE_INFRA_ONLY | F7–F8 | BAIXO |  | PENDING |
 | SB-bfe7c7 | `tests/api/agenda-configuracao.test.ts` | serverClient:5 | REPLACE_DB_LAYER | F1–F8 | MÉDIO |  | PENDING |
 | SB-638c86 | `tests/api/agenda-criacao-com-o-responsavel-do-corpo.test.ts` | sdkImport:35 | DELETE_INFRA_ONLY | F7–F8 | BAIXO |  | PENDING |
+| SB-639299 | `tests/api/emitir-token-respeita-o-teto-da-organizacao.test.ts` | serverClient:30 | REPLACE_DB_LAYER | F1–F8 | MÉDIO |  | PENDING |
 | SB-0ba1e0 | `tests/api/followup-cron-worker.test.ts` | adminClient:13,19,65,99 | REPLACE_DB_LAYER | F1–F8 | ALTO |  | PENDING |
 | SB-db081f | `tests/api/followup-enrollments.test.ts` | adminClient:16,24,168 serverClient:17,23 | REPLACE_DB_LAYER | F1–F8 | ALTO |  | PENDING |
 | SB-eea552 | `tests/api/followup-flows.test.ts` | serverClient:14,21 adminClient:15,22,266 db:295,550,608,766,832,1022 | REPLACE_DB_LAYER | F1–F8 | ALTO | t:followup_flow_pointers, t:followup_flow_versions | PENDING |
@@ -783,6 +784,7 @@
 | SB-815fcf | `tests/unit/realtime-token-do-socket.test.ts` | realtime:72 browserClient:86,89,102,106,196 sdkImport:88 env:104,105 | REPLACE_REALTIME | F4 | MÉDIO | NEXT_PUBLIC_SUPABASE_ANON_KEY, NEXT_PUBLIC_SUPABASE_URL | PENDING |
 | SB-ad8990 | `tests/unit/reconstruir-constraint-derruba-antes.test.ts` |  | REPLACE_DB_LAYER | F1–F8 | MÉDIO |  | PENDING |
 | SB-f35086 | `tests/unit/recusa-do-webhook-waha-deixa-rastro.test.ts` | adminClient:43,44 | REPLACE_DB_LAYER | F1–F8 | ALTO |  | PENDING |
+| SB-0aada6 | `tests/unit/redact-unificado-os-dois-caminhos-chamam-a-mesma-funcao.test.ts` |  | REPLACE_DB_LAYER | F1–F8 | MÉDIO |  | PENDING |
 | SB-9c83cc | `tests/unit/require-role-mfa.test.ts` | serverClient:19,25 | REPLACE_DB_LAYER | F1–F8 | MÉDIO |  | PENDING |
 | SB-8f8554 | `tests/unit/resposta-humana-assume-conversa-livre.test.ts` |  | REPLACE_DB_LAYER | F1–F8 | MÉDIO |  | PENDING |
 | SB-0e686c | `tests/unit/retencao-do-arquivo-de-webhook.test.ts` |  | KEEP_DOMAIN_LOGIC | F8 | BAIXO |  | PENDING |
@@ -821,6 +823,7 @@
 | SB-288cf8 | `tests/unit/telemetria-tem-um-leitor-so.test.ts` | db:47,92 | REPLACE_DB_LAYER | F1–F8 | MÉDIO | t:ai_invocations, t:llm_calls | PENDING |
 | SB-389037 | `tests/unit/templates-do-parceiro.test.ts` | storage:341 | REPLACE_STORAGE | F3 | MÉDIO |  | PENDING |
 | SB-ddc0b2 | `tests/unit/teste-do-agente-usa-status-que-a-coluna-aceita.test.ts` |  | REPLACE_DB_LAYER | F1–F8 | MÉDIO |  | PENDING |
+| SB-07ca67 | `tests/unit/teto-de-tokens-ativos-da-organizacao.test.ts` |  | REPLACE_DB_LAYER | F1–F8 | MÉDIO |  | PENDING |
 | SB-2841de | `tests/unit/tool-read-nao-muta.test.ts` | db:97,98,99,100 | REPLACE_DB_LAYER | F1–F8 | MÉDIO |  | PENDING |
 | SB-96850d | `tests/unit/tooltip-longo-tem-largura-maxima.test.ts` |  | KEEP_DOMAIN_LOGIC | F8 | BAIXO |  | PENDING |
 | SB-c4e9ad | `tests/unit/upload-templates-media-security.test.ts` | adminClient:6,11,79,86 storage:83 | REPLACE_DB_LAYER + REPLACE_STORAGE | F1–F8/F3 | ALTO |  | PENDING |

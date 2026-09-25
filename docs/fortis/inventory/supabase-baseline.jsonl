@@ -1583,11 +1583,13 @@
 {"id":"SB-3042a9","path":"supabase/migrations/20260924200100_0407_social_identity_na_fusao.sql","category":"SQL","classes":["REPLACE_RLS"]}
 {"id":"SB-7914ca","path":"supabase/migrations/20260924200200_0408_prospeccao_vence_no_cron.sql","category":"SQL","classes":["REPLACE_RLS"]}
 {"id":"SB-a7d8bc","path":"supabase/migrations/20260925163550_0413_provedor_personalizado.sql","category":"SQL","classes":["REPLACE_RLS"]}
+{"id":"SB-72fee5","path":"supabase/migrations/20260925170000_0414_redact_unificado_chama_a_cascata.sql","category":"SQL","classes":["REPLACE_RLS"]}
 {"id":"SB-50c18a","path":"supabase/migrations/MANIFEST.md","category":"DOC","classes":["REPLACE_DB_LAYER","REPLACE_KEYCLOAK","REPLACE_REALTIME"]}
 {"id":"SB-72dbef","path":"tasks/inbox-quem-manda.md","category":"HISTORY","classes":["HISTORICAL_ALLOWED"]}
 {"id":"SB-ea2088","path":"tests/api/agenda-cancelar-agenda-do-colega.test.ts","category":"TEST","classes":["DELETE_INFRA_ONLY"]}
 {"id":"SB-bfe7c7","path":"tests/api/agenda-configuracao.test.ts","category":"TEST","classes":["REPLACE_DB_LAYER"]}
 {"id":"SB-638c86","path":"tests/api/agenda-criacao-com-o-responsavel-do-corpo.test.ts","category":"TEST","classes":["DELETE_INFRA_ONLY"]}
+{"id":"SB-639299","path":"tests/api/emitir-token-respeita-o-teto-da-organizacao.test.ts","category":"TEST","classes":["REPLACE_DB_LAYER"]}
 {"id":"SB-0ba1e0","path":"tests/api/followup-cron-worker.test.ts","category":"TEST","classes":["REPLACE_DB_LAYER"]}
 {"id":"SB-db081f","path":"tests/api/followup-enrollments.test.ts","category":"TEST","classes":["REPLACE_DB_LAYER"]}
 {"id":"SB-eea552","path":"tests/api/followup-flows.test.ts","category":"TEST","classes":["REPLACE_DB_LAYER"]}
@@ -2217,6 +2219,7 @@
 {"id":"SB-815fcf","path":"tests/unit/realtime-token-do-socket.test.ts","category":"TEST","classes":["REPLACE_REALTIME"]}
 {"id":"SB-ad8990","path":"tests/unit/reconstruir-constraint-derruba-antes.test.ts","category":"TEST","classes":["REPLACE_DB_LAYER"]}
 {"id":"SB-f35086","path":"tests/unit/recusa-do-webhook-waha-deixa-rastro.test.ts","category":"TEST","classes":["REPLACE_DB_LAYER"]}
+{"id":"SB-0aada6","path":"tests/unit/redact-unificado-os-dois-caminhos-chamam-a-mesma-funcao.test.ts","category":"TEST","classes":["REPLACE_DB_LAYER"]}
 {"id":"SB-9c83cc","path":"tests/unit/require-role-mfa.test.ts","category":"TEST","classes":["REPLACE_DB_LAYER"]}
 {"id":"SB-8f8554","path":"tests/unit/resposta-humana-assume-conversa-livre.test.ts","category":"TEST","classes":["REPLACE_DB_LAYER"]}
 {"id":"SB-0e686c","path":"tests/unit/retencao-do-arquivo-de-webhook.test.ts","category":"TEST","classes":["KEEP_DOMAIN_LOGIC"]}
@@ -2255,6 +2258,7 @@
 {"id":"SB-288cf8","path":"tests/unit/telemetria-tem-um-leitor-so.test.ts","category":"TEST","classes":["REPLACE_DB_LAYER"]}
 {"id":"SB-389037","path":"tests/unit/templates-do-parceiro.test.ts","category":"TEST","classes":["REPLACE_STORAGE"]}
 {"id":"SB-ddc0b2","path":"tests/unit/teste-do-agente-usa-status-que-a-coluna-aceita.test.ts","category":"TEST","classes":["REPLACE_DB_LAYER"]}
+{"id":"SB-07ca67","path":"tests/unit/teto-de-tokens-ativos-da-organizacao.test.ts","category":"TEST","classes":["REPLACE_DB_LAYER"]}
 {"id":"SB-2841de","path":"tests/unit/tool-read-nao-muta.test.ts","category":"TEST","classes":["REPLACE_DB_LAYER"]}
 {"id":"SB-96850d","path":"tests/unit/tooltip-longo-tem-largura-maxima.test.ts","category":"TEST","classes":["KEEP_DOMAIN_LOGIC"]}
 {"id":"SB-c4e9ad","path":"tests/unit/upload-templates-media-security.test.ts","category":"TEST","classes":["REPLACE_DB_LAYER","REPLACE_STORAGE"]}

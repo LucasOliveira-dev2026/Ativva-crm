@@ -1,17 +1,17 @@
 # Inventário de migração do Supabase
 
-> Gerado por `node scripts/fortis/inventory/generate.mjs` sobre o upstream `aaf1b3bce1f4`.
+> Gerado por `node scripts/fortis/inventory/generate.mjs` sobre o upstream `d1081dc231e1`.
 > Não editar à mão: altere as regras em `scripts/fortis/inventory/` e regenere.
 
-**Arquivos com dependência ou menção: 2307** · UNVERIFIED: **0**
+**Arquivos com dependência ou menção: 2311** · UNVERIFIED: **0**
 
 ## Por área
 
 | Categoria | Arquivos | Detalhe |
 | --- | --- | --- |
 | RUNTIME | 863 | [inventory/supabase-runtime.md](inventory/supabase-runtime.md) |
-| TEST | 848 | [inventory/supabase-test.md](inventory/supabase-test.md) |
-| SQL | 217 | [inventory/supabase-sql.md](inventory/supabase-sql.md) |
+| TEST | 851 | [inventory/supabase-test.md](inventory/supabase-test.md) |
+| SQL | 218 | [inventory/supabase-sql.md](inventory/supabase-sql.md) |
 | HISTORY | 144 | [inventory/supabase-history.md](inventory/supabase-history.md) |
 | DOC | 125 | [inventory/supabase-doc.md](inventory/supabase-doc.md) |
 | SCRIPT | 71 | [inventory/supabase-script.md](inventory/supabase-script.md) |
@@ -27,10 +27,10 @@ Um arquivo pode ter mais de uma classificação. `DELETE_INFRA_ONLY` remove infr
 
 | Classificação | Arquivos | Substituto Fortis | Fase |
 | --- | --- | --- | --- |
-| REPLACE_DB_LAYER | 1559 | Camada lib/db (pg + transação com contexto tenant) → repositórios | F1–F8 |
+| REPLACE_DB_LAYER | 1562 | Camada lib/db (pg + transação com contexto tenant) → repositórios | F1–F8 |
 | DELETE_INFRA_ONLY | 210 | Remover/reescrever a infraestrutura Supabase (funcionalidade preservada) | F7–F8 |
 | REPLACE_KEYCLOAK | 208 | Keycloak realm fortis, client ativva-crm (OIDC BFF do ATIVVA, externalIdentityId) | F2 |
-| REPLACE_RLS | 181 | RLS por GUC app.current_company_id + app.current_user_id (padrão ATIVVA) | F1 |
+| REPLACE_RLS | 182 | RLS por GUC app.current_company_id + app.current_user_id (padrão ATIVVA) | F1 |
 | HISTORICAL_ALLOWED | 144 | Registro histórico (item 70): permitido, não operacional | — |
 | KEEP_DOMAIN_LOGIC | 113 | Manter domínio; só texto/comentário cita Supabase | F8 |
 | REPLACE_REALTIME | 94 | Gateway Socket.IO + Redis adapter, sala company:<id> (padrão ATIVVA) | F4 |
@@ -42,8 +42,8 @@ Um arquivo pode ter mais de uma classificação. `DELETE_INFRA_ONLY` remove infr
 
 | Risco | Arquivos |
 | --- | --- |
-| ALTO | 1196 |
-| MÉDIO | 665 |
+| ALTO | 1197 |
+| MÉDIO | 668 |
 | BAIXO | 446 |
 
 ## Runtime (app, lib, components, hooks, workers)

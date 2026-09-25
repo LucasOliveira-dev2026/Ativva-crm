@@ -1,10 +1,20 @@
 {
   "repository": "https://github.com/melgarafael/DeskcommCRM",
   "defaultBranch": "main",
-  "baseSha": "aaf1b3bce1f44a609dbb9740a3c9d57d2a08e989",
-  "baseCommitDate": "2026-09-25T14:25:58-03:00",
-  "nearestRelease": "v1.49.0 (base = v1.49.0 + 23 commits)",
+  "baseSha": "d1081dc231e1f7b0c6648af2011282d42b92fe85",
+  "baseCommitDate": "2026-09-25T15:44:46-03:00",
+  "nearestRelease": "v1.49.0 (base = v1.49.0 + 42 commits)",
   "license": "MIT",
   "licenseCopyright": "Copyright (c) 2026 Rafael Melgaço",
-  "recordedAt": "2026-09-25"
+  "recordedAt": "2026-09-25",
+  "history": [
+    {
+      "baseSha": "aaf1b3bce1f44a609dbb9740a3c9d57d2a08e989",
+      "event": "fork"
+    },
+    {
+      "baseSha": "d1081dc231e1f7b0c6648af2011282d42b92fe85",
+      "event": "merge upstream/main (T5)"
+    }
+  ]
 }
