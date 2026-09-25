@@ -49,10 +49,10 @@ One identity (SSO with ATIVVA), one tenancy model, one operational stack.
 
 - [x] T1 Fork provenance (remotes, upstream.json, license) — `91334e9`
 - [x] T2 Functional + Supabase inventories, parity matrix — `dbfe5c6`
-- [ ] T3 F1 schema: platform prelude, neutralizer, tenancy overlay, test fixtures,
-      codemod, Fortis DB harness, ratchet gate, CI, ADRs, report — **committed as
-      WIP; static gates green; invariant suite not yet at 0 failures (T4)**
-- [ ] T4 F1 evidence: `pnpm test:db:fortis` with **0 failures** — all 20 previously failing files pass; **full-suite confirmation (run 3) was interrupted, not observed**
+- [x] T3 F1 schema: platform prelude, neutralizer, tenancy overlay, test fixtures,
+      codemod, Fortis DB harness, ratchet gate, CI, ADRs, report — `e64cafa`, `ea79a05`
+- [x] T4 F1 evidence: `pnpm test:db:fortis` full suite **0 failures** (run 4,
+      2026-09-25: 2300/2301 pass, 1 skipped, 274 files, exit 0) on `ea79a05`
 - [ ] T5 Sync with upstream `main` (fork `main` = `d1081dc`, 19 commits past base
       `aaf1b3b`): `git merge upstream/main`, rebuild baseline, reinventory, rerun gates
 - [ ] T6 F1b data layer `lib/db` (Prisma 7 + adapter-pg; `runTenantTransaction`
@@ -154,11 +154,15 @@ pnpm test:db   # upstream reference harness (Supabase stubs), same commit
 - Fortis run 2 (after D7–D10): **2243/2301 pass, 53 fails / 20 files, 5 skipped**.
 - Fortis subset runs after D9–D14: 53 → 16 → 2 → **0 failures** on the 20
   previously failing files (last subset: 41/41 across the 4 hardest files).
+- **Fortis run 4 (full suite, alone, on `ea79a05`): 2300/2301 pass, 1 skipped,
+  0 failures, 0 failed suites, 274 files, harness exit 0 (`==> test:db:fortis verde`).**
+  F1 acceptance met. (2301 vs upstream 2299: the Fortis run counts 2 more cases;
+  both suites end with 0 failures.)
 - Tests of the rules were written alongside the code (no observed RED phase);
   the quoted `"auth"."users"` / `"auth"."uid"()` rules came from real apply
   failures on pg17 (RED observed through the database).
 
-## Triage of run 2 (resolved, pending full-suite confirmation)
+## Triage of run 2 (resolved; confirmed by full run 4)
 
 | Cause | Fix |
 | --- | --- |
@@ -173,7 +177,14 @@ pnpm test:db   # upstream reference harness (Supabase stubs), same commit
 
 ## Environment notes (for the next agent)
 
-- Docker works; image `pgvector/pgvector:pg17` pulled. Docker Hub may rate-limit:
+- Docker: in a fresh cloud container the daemon may be stopped — start it with
+  `nohup dockerd > /tmp/dockerd.log 2>&1 &`. Image `pgvector/pgvector:pg17`
+  (pull `mirror.gcr.io/pgvector/pgvector:pg17` and `docker tag` it on a 429).
+- Session branch in cloud sessions: `claude/fortis-platform-migration-b8xn78`
+  (same history as `feat/fortis-platform-migration`); remote `upstream` added
+  with `git remote add upstream https://github.com/melgarafael/DeskcommCRM`.
+- Subagents: pick the model by task (haiku for search, sonnet for triage and
+  mechanical rewrites, opus only for hard design) — user instruction. Docker Hub may rate-limit:
   use `mirror.gcr.io/<image>` if a pull fails.
 - Vitest in non-TTY may exit without a summary: always use `--reporter=json --outputFile=…`.
 - `node --test <dir>` fails on Node 22: pass a glob.
@@ -193,8 +204,10 @@ pnpm test:db   # upstream reference harness (Supabase stubs), same commit
 
 ## Next Step
 
-T4: run the full suite alone (`pnpm test:db:fortis --reporter=json --outputFile=…`)
-and confirm 0 failures — run 3 was stopped by the user before finishing, so this
-is NOT yet proven. If green, mark T3/T4 done; then T5 (sync with upstream `d1081dc`).
+T5: `git merge upstream/main` (no rebase; upstream `d1081dc`, 19 commits, no file
+overlap with the fork — new migrations 0414/0415 append to the baseline, no change
+to `fn_user_org_ids()`), then `node scripts/fortis/baseline/build.mjs`,
+`node scripts/fortis/inventory/generate.mjs`, the ratchet, the rule tests and
+`pnpm test:db:fortis` (full, alone). Update `docs/fortis/upstream.json` base.
 Note: the ratchet excludes the Fortis-owned `fortis-platform.yml` and
 `vitest.db.fortis.config.ts` (they name Supabase on purpose; CI would fail otherwise).

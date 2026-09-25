@@ -128,7 +128,7 @@ Restrições que ditam a ordem:
 
 ## MIGRATION ORDER
 
-F0 inventários (**feito**) → F1 banco (**em andamento**: schema neutro,
+F0 inventários (**feito**) → F1 banco (**feito**: schema neutro,
 plataforma, overlay de tenancy, suíte de invariantes na plataforma Fortis) →
 F1b/F2 camada de dados e Keycloak, módulo a módulo → F3 → F4 → F5 → F6 → F7 →
 F8 (`--strict`) → F9 paridade → F10 integração.
@@ -153,4 +153,4 @@ Medido no commit base, antes de qualquer troca de infraestrutura:
 | --- | --- | --- |
 | Unitários (`vitest run`) | 14.017 / 14.018 passam | 1 falha pré-existente: `tests/unit/pdf-extractor.test.ts` (estratégia de subprocesso `tsx`) |
 | Invariantes de banco (`pnpm test:db`, stubs Supabase, pg15) | 2.298 / 2.299 passam, 1 pulado, **0 falhas** | referência do F1 |
-| Invariantes na plataforma Fortis (`pnpm test:db:fortis`, pg17) | 2.243 / 2.301 passam, **53 falhas** em 20 arquivos | F1 em andamento; triagem em `odd/tasks/fortis-platform-migration.md` |
+| Invariantes na plataforma Fortis (`pnpm test:db:fortis`, pg17) | 2.300 / 2.301 passam, 1 pulado, **0 falhas** (274 arquivos, em `ea79a05`) | critério do F1 atingido; histórico da triagem em `odd/tasks/fortis-platform-migration.md` |
