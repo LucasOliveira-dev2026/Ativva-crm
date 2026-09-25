@@ -54,3 +54,8 @@ grant postgres to crm_owner;
 
 grant usage on schema test_db to crm_anonymous, crm_authenticated, crm_service;
 grant execute on all functions in schema test_db to crm_anonymous, crm_authenticated, crm_service;
+
+-- The runtime login role (crm_app) is NOLOGIN in the prelude: the installer
+-- gives it LOGIN and a secret. The throwaway test cluster uses a fixed one so
+-- tests/fortis/db can connect exactly as the application does.
+alter role crm_app login password 'crm_app';

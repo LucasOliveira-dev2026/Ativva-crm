@@ -1,0 +1,19 @@
+// Prisma schema of the ATIVVA CRM data layer (ADR-0001, docs/fortis/adr).
+//
+// SQL-first: the database is defined by database/platform + database/baseline
+// (RLS, functions, triggers, pgvector stay in SQL). This file only describes
+// what the client needs. Models arrive module by module, pulled from the
+// neutral schema, as call sites move off the Supabase client.
+//
+// The generated client is committed (lib/db/generated) so typecheck and build
+// need no generate step; CI checks it is current: `pnpm prisma generate`.
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../lib/db/generated"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}

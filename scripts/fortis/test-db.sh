@@ -28,7 +28,7 @@ TEMPLATE="inv_baseline"
 PUBLICACAO="127.0.0.1::5432"
 [ -n "${TEST_DB_PORT:-}" ] && PUBLICACAO="127.0.0.1:${TEST_DB_PORT}:5432"
 CARIMBO="$(mktemp "${TMPDIR:-/tmp}/crm-test-db-carimbo.XXXXXX")"
-MEDIDOS=("$ROOT/database" "$ROOT/tests/invariants" "$ROOT/scripts/fortis" "$ROOT/vitest.db.fortis.config.ts")
+MEDIDOS=("$ROOT/database" "$ROOT/tests/invariants" "$ROOT/tests/fortis" "$ROOT/lib/db" "$ROOT/scripts/fortis" "$ROOT/vitest.db.fortis.config.ts")
 
 cleanup() {
   docker rm -fv "$CONTAINER" >/dev/null 2>&1 || true
