@@ -1,4 +1,4 @@
-// node --test scripts/fortis/ratchet.test.mjs
+// node --test scripts/fortis/ratchet.node-test.mjs
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { compare, strictProblems } from './ratchet.mjs';

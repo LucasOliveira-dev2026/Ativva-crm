@@ -24,7 +24,7 @@ jobs:
         with:
           node-version: 22
       - name: Transformation and ratchet rules
-        run: node --test 'scripts/fortis/**/*.test.mjs'
+        run: node --test 'scripts/fortis/**/*.node-test.mjs'
       - name: Neutral schema is current and free of Supabase platform objects
         run: node scripts/fortis/baseline/build.mjs --check
       - name: Inventories are current

@@ -1,4 +1,4 @@
-// node --test scripts/fortis/baseline/neutralize.test.mjs
+// node --test scripts/fortis/baseline/neutralize.node-test.mjs
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { neutralize } from './neutralize.mjs';

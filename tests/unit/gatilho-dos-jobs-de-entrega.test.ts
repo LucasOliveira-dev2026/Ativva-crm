@@ -229,6 +229,20 @@ const GATILHO_ESPERADO: Record<string, { condicao: string | null; efeito: string
     efeito: "Este é o check obrigatório `build-and-size` (`pnpm build` em Node 22).",
   },
 
+  // --- gates da migração Fortis (fork; workflow próprio, docs/fortis/UPSTREAM-SYNC.md) ---
+  "fortis-platform.yml::platform-static": {
+    condicao: null,
+    efeito:
+      "Regras de transformação, schema neutro atual, inventários atuais e a catraca " +
+      "zero-Supabase. Desligá-lo deixa o fork ganhar dependência nova de Supabase em silêncio.",
+  },
+  "fortis-platform.yml::fortis-invariants": {
+    condicao: null,
+    efeito:
+      "A suíte de invariantes do upstream contra o PostgreSQL da plataforma Fortis. " +
+      "Desligá-lo deixa o isolamento de tenancy sem prova na plataforma nova.",
+  },
+
   // --- e o que legitimamente tem interruptor -----------------------------------
   "acolhida.yml::acolher": {
     condicao:

@@ -139,7 +139,7 @@ One identity (SSO with ATIVVA), one tenancy model, one operational stack.
 ## Verification (commands)
 
 ```bash
-node --test 'scripts/fortis/**/*.test.mjs'          # 29 tests (transform/ratchet/inventory rules)
+node --test 'scripts/fortis/**/*.node-test.mjs'          # 29 tests (transform/ratchet/inventory rules)
 node scripts/fortis/baseline/build.mjs --check      # schema current + zero Supabase residuals
 node scripts/fortis/inventory/generate.mjs --check  # inventories current
 node scripts/fortis/zero-supabase-gate.mjs          # ratchet

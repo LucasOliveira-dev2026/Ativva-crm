@@ -30,7 +30,7 @@ git merge upstream/main                        # nunca rebase de branch publicad
 node scripts/fortis/baseline/build.mjs         # reescreve o schema novo do upstream
 node scripts/fortis/inventory/generate.mjs     # reinventaria
 node scripts/fortis/zero-supabase-gate.mjs     # catraca
-node --test 'scripts/fortis/**/*.test.mjs'                    # regras de transformação
+node --test 'scripts/fortis/**/*.node-test.mjs'                    # regras de transformação
 pnpm test:db:fortis                            # invariantes na plataforma Fortis
 ```
 
