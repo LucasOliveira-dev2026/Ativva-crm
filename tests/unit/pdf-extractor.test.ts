@@ -16,7 +16,8 @@
 // e sem gerador — determinísticas byte a byte.
 
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -215,13 +216,27 @@ describe("extractPdfText — estratégia `processo-a-parte`", () => {
         }));
       }).catch((e) => { console.error(String(e && e.stack || e)); process.exit(1); });
     `;
-    const saida = execFileSync(process.execPath, ["node_modules/tsx/dist/cli.mjs", "--eval", script], {
-      cwd: raiz,
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "pipe"],
-      timeout: 60_000,
-      env: { ...process.env, NODE_NO_WARNINGS: "1" },
-    });
+    // Um ARQUIVO, como o worker, e não `--eval`: sob `tsx --eval` o `import()`
+    // de um módulo TS (compilado para CommonJS) devolve só `{ default }` — as
+    // exportações nomeadas não aparecem, nem num módulo trivial (medido no Node
+    // 22.22 com tsx 4.23.13: `m.extractPdfText is not a function`). Um arquivo
+    // `.cjs` executado pelo tsx recebe as exportações nomeadas, que é o que o
+    // worker de produção recebe.
+    const pasta = mkdtempSync(join(tmpdir(), "pdf-sob-tsx-"));
+    const arquivo = join(pasta, "sonda.cjs");
+    writeFileSync(arquivo, script);
+    let saida: string;
+    try {
+      saida = execFileSync(process.execPath, ["node_modules/tsx/dist/cli.mjs", arquivo], {
+        cwd: raiz,
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"],
+        timeout: 60_000,
+        env: { ...process.env, NODE_NO_WARNINGS: "1" },
+      });
+    } finally {
+      rmSync(pasta, { recursive: true, force: true });
+    }
     const r = JSON.parse(saida) as { estrategia: string; texto: string; heapMb: number };
     expect(r.estrategia).toBe("processo-a-parte");
     expect(r.texto).toBe(

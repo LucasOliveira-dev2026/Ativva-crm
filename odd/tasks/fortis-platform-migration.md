@@ -55,9 +55,12 @@ One identity (SSO with ATIVVA), one tenancy model, one operational stack.
       2026-09-25: 2300/2301 pass, 1 skipped, 274 files, exit 0) on `ea79a05`
 - [x] T5 Sync with upstream `main` `d1081dc` (19 commits): merge `38e3644`, regen
       `11b6385`, unit-suite fix `992cc1e`; invariants and unit suite at the reference
-- [ ] T6 F1b data layer `lib/db` (Prisma 7 + adapter-pg; `runTenantTransaction`
-      sets `SET LOCAL ROLE crm_authenticated` + GUCs; `runPlatformTransaction` sets
-      `SET LOCAL ROLE crm_service` + `SET LOCAL lock_timeout = 0`)
+- [x] T6a F1b data layer foundation `lib/db` (Prisma 7.10 + adapter-pg):
+      `runTenantTransaction` / `runPlatformTransaction` / `onCommit` — `fa30bb9`
+- [x] T6x Upstream unit test `pdf-extractor` fixed (was failing on the upstream
+      base too): tsx subprocess runs a script FILE instead of `--eval` (D17)
+- [ ] T6b Prisma schema from the neutral DB (`db pull`) + first module moved off
+      the Supabase client (strangling starts)
 - [ ] T7 F2 Keycloak client `ativva-crm` (ADR-0003 proposed; realm change needs approval)
 - [ ] T8 F3 object storage · T9 F4 realtime · T10 F5 Redis/workers · T11 F6 n8n
 - [ ] T12 F7 installer/backup/deploy · T13 F8 remove SDK/env (`--strict`) · T14 F9 parity · T15 F10 ATIVVA
@@ -131,6 +134,26 @@ One identity (SSO with ATIVVA), one tenancy model, one operational stack.
   unit suite. And the two `fortis-platform.yml` jobs are declared in the upstream
   map `tests/unit/gatilho-dos-jobs-de-entrega.test.ts` (with `condicao: null`) —
   a Fortis edit to an upstream unit test (expect a small sync conflict).
+- **D16 `lib/db` contract** (ADR-0001): one pool as `crm_app`; scopes differ by
+  role. Tenant: `SET LOCAL ROLE crm_authenticated` + `app.current_user_id /
+  company_id / aal / session_id` (zod-validated, `z.guid()` = Postgres uuid).
+  Platform: `SET LOCAL ROLE crm_service`, `lock_timeout = 0`, typed reason in
+  `app.platform_reason` (`PLATFORM_REASONS`). Nested call reuses the outer
+  transaction only for an identical scope, else `DbScopeError` (no silent
+  privilege change — ATIVVA uses two pools, we cannot reuse across roles).
+  `onCommit` runs after the outermost commit, dropped on rollback, failures
+  logged (`db.on_commit_failed`) without failing the unit of work. Generated
+  client committed in `lib/db/generated` (`prisma-client` generator, ESM), CI
+  checks it is current. Fortis DB tests are `tests/fortis/db/*.db-test.ts`
+  (outside vitest's default include), run by `test:db:fortis`; the fixtures give
+  `crm_app` LOGIN + password `crm_app` in the throwaway cluster only.
+  `DATABASE_URL` is not wired into `lib/env.ts`/`.env.example` yet: it becomes
+  required when the first call site moves (T6b) — do it then.
+- **D17 `pdf-extractor` tsx case**: under `tsx --eval`, `import()` of a TS module
+  (compiled to CJS) yields only `{ default }` (Node 22.22 + tsx 4.23.13, even for a
+  trivial module); from a script file the named exports exist — which is how the
+  worker runs. The upstream test now writes a temp `.cjs` and runs it with tsx
+  (Fortis edit of an upstream test; worth proposing upstream).
 - **D11 Fork location**: `LucasOliveira-dev2026/ativva-crm` (org `Fortis-solucoes`
   unreachable; GitHub App cannot create repos — user created it).
 
@@ -170,6 +193,13 @@ pnpm test:db   # upstream reference harness (Supabase stubs), same commit
   the pre-existing `pdf-extractor`. After D15: **14043/14044 pass, only
   `tests/unit/pdf-extractor.test.ts` fails (same as the upstream reference), no
   `Errors` line** — the gatilho test went RED → GREEN (24/24).
+- T6a: `tests/fortis/db/transacoes.db-test.ts` RED observed (`not implemented`),
+  then 15/15 GREEN; sabotage (nested scope check disabled) → 14/15, caught.
+  Full invariants with it: **2333/2334 pass, 1 skipped, 0 failures, 277 files**.
+  Unit suite with T6a: 14043/14044, only `pdf-extractor` (pre-existing).
+- `pdf-extractor` (D17): RED reproduced in the full run and standalone
+  (`m.extractPdfText is not a function`), 16/16 GREEN after; sabotage of
+  `estrategiaPadrao()` → both strategy cases RED, caught; product restored.
 - Tests of the rules were written alongside the code (no observed RED phase);
   the quoted `"auth"."users"` / `"auth"."uid"()` rules came from real apply
   failures on pg17 (RED observed through the database).
@@ -216,12 +246,11 @@ pnpm test:db   # upstream reference harness (Supabase stubs), same commit
 
 ## Next Step
 
-T6 (F1b data layer, ADR-0001): add Prisma 7 + `@prisma/adapter-pg`; create
-`lib/db` with `runTenantTransaction({ userId, companyId, aal, sessionId }, fn)`
-(`SET LOCAL ROLE crm_authenticated` + `app.*` GUCs) and
-`runPlatformTransaction(reason, fn)` (`SET LOCAL ROLE crm_service`,
-`lock_timeout = 0`); TDD against the real Fortis Postgres (RLS isolation between
-2 companies, fail-closed outside the scopes since `crm_app` is NOINHERIT).
-No call-site rewrite yet — that is module-by-module strangling afterwards.
+T6b: pull the Prisma schema from the neutral DB (script, reproducible, with a
+`--check` in CI; `vector` columns are `Unsupported`), wire `DATABASE_URL`
+(`lib/env.ts` + `.env.example`), add a shared `db()` instance, then move the
+first small module off `supabase.from()` (pick from the graph in
+PLATFORM-MIGRATION-REPORT.md; the ratchet must go DOWN). Subagents per the
+user's rule: haiku for search, sonnet for mechanical rewrites.
 Note: the ratchet excludes the Fortis-owned `fortis-platform.yml` and
 `vitest.db.fortis.config.ts` (they name Supabase on purpose; CI would fail otherwise).
