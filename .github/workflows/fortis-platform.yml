@@ -1,0 +1,49 @@
+# Fortis platform migration gates (docs/fortis/UPSTREAM-SYNC.md). A workflow of
+# its own so upstream syncs never conflict with the upstream CI files.
+name: fortis-platform
+
+on:
+  push:
+    branches: [main, 'feat/**']
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fortis-platform-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  platform-static:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Transformation and ratchet rules
+        run: node --test 'scripts/fortis/**/*.test.mjs'
+      - name: Neutral schema is current and free of Supabase platform objects
+        run: node scripts/fortis/baseline/build.mjs --check
+      - name: Inventories are current
+        run: node scripts/fortis/inventory/generate.mjs --check
+      - name: Zero-Supabase ratchet
+        run: node scripts/fortis/zero-supabase-gate.mjs
+
+  fortis-invariants:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        pg: [17]
+    env:
+      TEST_DB_IMAGE: pgvector/pgvector:pg${{ matrix.pg }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/preparar-node
+        timeout-minutes: 5
+      - name: Upstream invariants on the Fortis platform (pg${{ matrix.pg }})
+        run: pnpm test:db:fortis

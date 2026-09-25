@@ -9,10 +9,10 @@ import { isEntryPoint, moduleOf, routeOf } from './modules.mjs';
 import { detectSignals, hasSupabaseSignal } from './signals.mjs';
 
 const TEXT = /\.(ts|tsx|mjs|cjs|js|jsx|json|sql|sh|md|mdx|yml|yaml|toml|txt|conf|env[a-z.]*)$|(^|\/)(Dockerfile[^/]*|Caddyfile[^/]*|\.env[^/]*)$/;
-// The migration's own tooling and docs name Supabase on purpose; `database/`
+// The migration's own tooling, docs and ODD task records name Supabase on purpose; `database/`
 // is guarded separately by scripts/fortis/baseline/build.mjs --check, which
 // refuses any Supabase platform object in the applied schema.
-const SELF = /^(scripts\/fortis\/|docs\/fortis\/|database\/)/;
+const SELF = /^(scripts\/fortis\/|docs\/fortis\/|database\/|odd\/)/;
 // A file reached by this many entry points is shared plumbing, not a feature.
 const SHARED_FANOUT = 40;
 
