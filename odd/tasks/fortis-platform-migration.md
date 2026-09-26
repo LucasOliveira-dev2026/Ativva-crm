@@ -352,11 +352,13 @@ ATIVVA repository must be coordinated separately; do not edit it from this CRM t
 
 T6b.3 remains in progress. CRM maps an already validated BFF principal and exactly matched
 internal identity to `TenantContext`; `lib/auth/identity.ts` performs scoped identity lookup.
-Added `lib/auth/validated-principal.ts` as a strict, branded carrier for claims returned by
-the trusted BFF boundary; it parses only the typed claims payload, not cookies or tokens.
-Its focused suite passes 6/6; `NODE_OPTIONS=--max-old-space-size=8192 pnpm typecheck`
-passes. This is a contract seam only, not connected to request runtime or `loadAuthUser`.
-ATIVVA must provide the trusted request-context integration per handoff. Storage adapter
+Added `lib/auth/validated-principal.ts` as a strict branded carrier for claims returned by
+the trusted BFF boundary, plus AsyncLocalStorage request scope (`withBffValidatedPrincipal`,
+`getBffValidatedPrincipal`) to isolate concurrent requests. Scope tests first failed because
+those exports were absent, then passed 2/2. Combined auth tests pass 21/21;
+`NODE_OPTIONS=--max-old-space-size=8192 pnpm typecheck` passes. This is a request-context
+seam only, not connected to Next request runtime or `loadAuthUser`; ATIVVA must bind the
+trusted principal per handoff. Storage adapter
 work remains blocked on the ADR-0004 authorization mismatch: metadata table has no tenant
 column; current bucket policies use a UUID-first `name`, while ADR storage key adds a
 `crm/<bucket>/` prefix. Fortis DB tests can prove A/B visibility after resolving the canonical
