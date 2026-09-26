@@ -128,7 +128,7 @@ One identity (SSO with ATIVVA), one tenancy model, one operational stack.
   < `crm_service` (was crm_user/crm_platform), because code and tests order by
   role name (`audit-log-sob-o-default-acl…` compares an ordered string).
 - **D14 `scripts/lib/gate-ativacao.ts`** (ops CLI querying the DB) edited in place
-  to ask about `crm_service`: it is Fortis-owned now (expect a small sync conflict).
+  to ask for `crm_service`: it is Fortis-owned now (expect a small sync conflict).
 - **D15 Fortis rule tests are `*.node-test.mjs`** (not `*.test.mjs`): vitest's
   default include ran them and failed to bundle `node:test`, breaking the upstream
   unit suite. And the two `fortis-platform.yml` jobs are declared in the upstream
@@ -145,10 +145,10 @@ One identity (SSO with ATIVVA), one tenancy model, one operational stack.
   logged (`db.on_commit_failed`) without failing the unit of work. Generated
   client committed in `lib/db/generated` (`prisma-client` generator, ESM), CI
   checks it is current. Fortis DB tests are `tests/fortis/db/*.db-test.ts`
-  (outside vitest's default include), run by `test:db:fortis`; the fixtures give
+  (outside vitest's default include), run by `test:db:fortis`; fixtures give
   `crm_app` LOGIN + password `crm_app` in the throwaway cluster only.
-  `DATABASE_URL` is not wired into `lib/env.ts`/`.env.example` yet: it becomes
-  required when the first call site moves (T6b) — do it then.
+  `DATABASE_URL` becomes required when the first call site moves; no application
+  module is switched in T6b.2.
 - **D17 `pdf-extractor` tsx case**: under `tsx --eval`, `import()` of a TS module
   (compiled to CJS) yields only `{ default }` (Node 22.22 + tsx 4.23.13, even for a
   trivial module); from a script file the named exports exist — which is how the
@@ -157,177 +157,189 @@ One identity (SSO with ATIVVA), one tenancy model, one operational stack.
 - **D18 Atomic platform cutover; no dual-stack**: the application must never read
   some data from Supabase and other data from Fortis PostgreSQL. Keycloak auth,
   `lib/db` data access, S3/MinIO storage, and Socket.IO realtime move together on
-  this feature branch; intermediate commits must compile and pass applicable
-  suites, but end-to-end app operation is accepted only after the coordinated
-  cutover. Nothing is deployed until that point. Rationale: mixed identity,
-  data, storage, or realtime providers would split authorization and consistency
-  boundaries, making tenant isolation and feature parity unprovable. Consequence:
-  T6b prepares shared adapters and schemas without claiming the application is
-  operational; module migration and removal of Supabase remain gated by the
-  integrated replacement path. Supersedes any interpretation of T6b as a
-  production-ready incremental rollout.
+  this feature branch; intermediate commits compile and pass applicable suites,
+  but end-to-end app operation is accepted only after coordinated cutover. Nothing
+  is deployed until then. Mixed identity/data/storage/realtime providers split
+  authorization and consistency boundaries, making tenant isolation and parity
+  unprovable. T6b prepares shared adapters without claiming operational status.
 - **D11 Fork location**: `LucasOliveira-dev2026/ativva-crm` (org `Fortis-solucoes`
   unreachable; GitHub App cannot create repos — user created it).
 
 ## Verification (commands)
 
 ```bash
-node --test 'scripts/fortis/**/*.node-test.mjs'          # 29 tests (transform/ratchet/inventory rules)
-node scripts/fortis/baseline/build.mjs --check      # schema current + zero Supabase residuals
-node scripts/fortis/inventory/generate.mjs --check  # inventories current
-node scripts/fortis/zero-supabase-gate.mjs          # ratchet
-pnpm test:db:fortis --reporter=json --outputFile=/tmp/fortis-inv.json   # ~20 min, needs docker
-pnpm test:db   # upstream reference harness (Supabase stubs), same commit
+node --test 'scripts/fortis/**/*.node-test.mjs'
+node scripts/fortis/baseline/build.mjs --check
+node scripts/fortis/inventory/generate.mjs --check
+node scripts/fortis/zero-supabase-gate.mjs
+pnpm test:db:fortis --reporter=json --outputFile=/tmp/fortis-inv.json
+pnpm test:db
 ```
 
 ## Evidence
 
 - Upstream unit baseline @ base (`vitest run`, JSON reporter): 14017/14018 pass;
   1 pre-existing failure `tests/unit/pdf-extractor.test.ts` (tsx subprocess strategy).
-- Upstream invariants @ base (upstream harness, pgvector pg15): **2298/2299 pass,
-  1 skipped, 0 failures** → Fortis target is 0 failures.
+- Upstream invariants @ base (upstream harness, pgvector pg15): 2298/2299 pass,
+  1 skipped, 0 failures → Fortis target is 0 failures.
 - Neutral schema on plain pg17: 170 tables, 561 policies, 436 functions, 156
   triggers, 12 tables in `crm_realtime`, 6 buckets; second application clean.
 - Static gates @ WIP commit: 25/25 rule tests, `build --check`, `generate --check`,
   ratchet PASS, eslint 0 problems on `scripts/fortis`.
-- Fortis run 1 (exploratory, contended by the unit run): 2235/2299 pass, 59 fails / 22 files.
-- Fortis run 2 (after D7–D10): **2243/2301 pass, 53 fails / 20 files, 5 skipped**.
-- Fortis subset runs after D9–D14: 53 → 16 → 2 → **0 failures** on the 20
-  previously failing files (last subset: 41/41 across the 4 hardest files).
-- **Fortis run 4 (full suite, alone, on `ea79a05`): 2300/2301 pass, 1 skipped,
-  0 failures, 0 failed suites, 274 files, harness exit 0 (`==> test:db:fortis verde`).**
-  F1 acceptance met. (2301 vs upstream 2299: the Fortis run counts 2 more cases;
-  both suites end with 0 failures.)
-- **After T5 (upstream `d1081dc` merged), invariants: 2318/2319 pass, 1 skipped,
-  0 failures, 276 files, exit 0.**
-- Unit suite after T5, first run: 2 real fork regressions (node:test files picked
-  by vitest; `gatilho-dos-jobs-de-entrega` RED because of the 2 Fortis jobs) +
-  the pre-existing `pdf-extractor`. After D15: **14043/14044 pass, only
-  `tests/unit/pdf-extractor.test.ts` fails (same as the upstream reference), no
-  `Errors` line** — the gatilho test went RED → GREEN (24/24).
-- T6a: `tests/fortis/db/transacoes.db-test.ts` RED observed (`not implemented`),
-  then 15/15 GREEN; sabotage (nested scope check disabled) → 14/15, caught.
-  Full invariants with it: **2333/2334 pass, 1 skipped, 0 failures, 277 files**.
-  Unit suite with T6a: 14043/14044, only `pdf-extractor` (pre-existing).
-- `pdf-extractor` (D17): RED reproduced in the full run and standalone
-  (`m.extractPdfText is not a function`), 16/16 GREEN after; sabotage of
-  `estrategiaPadrao()` → both strategy cases RED, caught; product restored.
-- **Full unit suite after D17 (on `73ba361`): 14044/14044 pass, 0 failures,
-  1402 files, exit 0, no `Errors` line** — first fully green unit run of the fork
-  (the upstream base itself had 1 failure).
-- Tests of the rules were written alongside the code (no observed RED phase);
-  the quoted `"auth"."users"` / `"auth"."uid"()` rules came from real apply
-  failures on pg17 (RED observed through the database).
+- Fortis run 1 (exploratory, contended by unit run): 2235/2299 pass, 59 fails / 22 files.
+- Fortis run 2 (after D7–D10): 2243/2301 pass, 53 fails / 20 files, 5 skipped.
+- Fortis subset runs after D9–D14: 53 → 16 → 2 → 0 failures on the 20 previously
+  failing files (last subset: 41/41 across 4 hardest files).
+- Fortis full run 4 (alone, on `ea79a05`): 2300/2301 pass, 1 skipped, 0 failures,
+  0 failed suites, 274 files, harness exit 0. F1 acceptance met.
+- After T5 (upstream `d1081dc` merged), invariants: 2318/2319 pass, 1 skipped,
+  0 failures, 276 files, exit 0.
+- Unit suite after T5, before D17: 14043/14044 pass; only `pdf-extractor` failed.
+- T6a: DB transaction tests RED (`not implemented`), then 15/15 GREEN; sabotage
+  nested-scope check disabled → 14/15, caught. Full invariants 2333/2334 pass,
+  1 skipped, 0 failures.
+- `pdf-extractor` D17: RED reproduced; 16/16 GREEN after fix. Sabotage of
+  `estrategiaPadrao()` made both strategy cases RED, caught; source restored.
+- Full unit suite after D17 (`73ba361`): 14044/14044 pass, 0 failures, 1402 files,
+  exit 0, no `Errors` line.
+- **T6b.2:** `pnpm test:db:fortis --reporter=json --outputFile=/tmp/t6b2-db.json`
+  exited 0. JSON: 738/738 suites passed; 2333 passed, 0 failed, 1 pending.
+  Container `ativva-crm-test-db-364680` removed by harness. Commit `75cb81e82`
+  records verification; implementation is `fd4f463be`.
+- **T6b.3 current:** `lib/auth/tenant-context.ts` is a pure mapping from BFF-validated
+  principal `{sub,sid,acr,amr}`, resolved identity row, and selected company to existing
+  `TenantContext`; no credential parsing or authorization decision. It rejects invalid
+  claims, absent/disabled identity and invalid company. `lib/auth/tenant-context.test.ts`
+  is 8/8 green; `pnpm exec prettier --check lib/auth/tenant-context.ts
+  lib/auth/tenant-context.test.ts` passes. Initial test-first invocation failed because the target module did not
+  exist (runner exited 1 with zero tests collected); this is not counted as valid
+  behavior RED evidence. Initial typecheck hit OOM at default memory;
+  `NODE_OPTIONS=--max-old-space-size=8192 pnpm typecheck` passed. The first expanded
+  direct tsc run caught test fixture literal widening; adding `as const` fixed it.
+  `AuthUser`, `ActiveOrg`, `loadAuthUser`, and `requireRole` remain Supabase-backed;
+  this seam alone does not switch runtime or make app operational. Attempted
+  `pnpm exec eslint lib/auth/tenant-context.ts lib/auth/tenant-context.test.ts` twice;
+  the harness exited 2 with `ESLint output (JSON parse failed: EOF while parsing a value...)`,
+  so file-level lint remains unavailable, not passed. Projection wiring
+  awaits coordinated ATIVVA BFF integration and must preserve D18.
+- **Native review:** unavailable for this candidate. Inspect refused with
+  `empty_base_diff_bootstrap_required` and returned target `sha256:a0fa7500…`, which
+  differs from requested `sha256:e3162166…`. No bootstrap, retry, or START.
 
 ## Triage of run 2 (resolved; confirmed by full run 4)
 
 | Cause | Fix |
 | --- | --- |
 | Tests read/apply upstream migration files | neutral copies in `database/upstream-migrations/` + codemod path mapping (D10) |
-| Tests read the baseline via `join(…, "supabase", "baseline.sql")` | path-parts rule (D10) |
+| Tests read baseline via `join(…, "supabase", "baseline.sql")` | path-parts rule (D10) |
 | Role words in camelCase keys, object keys, `role:priv` strings | D9 boundaries |
 | Probe objects created by `postgres` vs definers owned by `crm_owner` | fixtures `grant postgres to crm_owner` (D10) |
 | Support sessions missing from `fn_user_org_ids()` | overlay re-states upstream body + hash guard (D12) |
-| Regex spellings of `auth.uid()` in body scanners | codemod rules (D10) |
+| Regex spellings of `auth.uid()` in scanners | codemod rules (D10) |
 | Ordered role strings | role names preserving order (D13) |
 | `gate-ativacao.ts` asked for `service_role` | D14 |
 
 ## Environment notes (for the next agent)
 
-- Docker: in a fresh cloud container the daemon may be stopped — start it with
-  `nohup dockerd > /tmp/dockerd.log 2>&1 &`. Image `pgvector/pgvector:pg17`
-  (pull `mirror.gcr.io/pgvector/pgvector:pg17` and `docker tag` it on a 429).
-- Session branch in cloud sessions: `claude/fortis-platform-migration-b8xn78`
-  (same history as `feat/fortis-platform-migration`); remote `upstream` added
-  with `git remote add upstream https://github.com/melgarafael/DeskcommCRM`.
-- Subagents: pick the model by task (haiku for search, sonnet for triage and
-  mechanical rewrites, opus only for hard design) — user instruction. Docker Hub may rate-limit:
-  use `mirror.gcr.io/<image>` if a pull fails.
-- Vitest in non-TTY may exit without a summary: always use `--reporter=json --outputFile=…`.
-- `node --test <dir>` fails on Node 22: pass a glob.
-- `scripts/fortis/test-db.sh` refuses the result if `database/`, `tests/invariants`,
-  `scripts/fortis` or `vitest.db.fortis.config.ts` change during the run.
-- Do not run the unit suite and the DB suite at the same time (docker EPIPE).
-- Run artifacts of this session (not in git): `…/scratchpad/fortis-inv3.json`
-  (full run 3), `upstream-inv.json` (reference), `unit-base.json` (unit baseline).
-- Running only some files: `pnpm test:db:fortis tests/invariants/a.test.ts …` (setup ~4 min).
+- Docker: a fresh cloud container may have daemon stopped; use only authorized local
+  disposable test infrastructure. Never touch persistent or unrelated containers.
+- Subagents: haiku for search, sonnet for triage/mechanical rewrites, opus only for hard design.
+- Vitest non-TTY should use JSON reporter to preserve summary and exit evidence.
+- `node --test <dir>` fails on Node 22; pass a glob.
+- Do not run unit and DB suites in parallel (docker EPIPE).
+- `scripts/fortis/test-db.sh` refuses result if protected paths change during run.
+- The memory mirror is `odd/fortis-platform-migration/tasks.md`; update with this file.
 
 ## Progress
 
-- Fork: `LucasOliveira-dev2026/ativva-crm`; its `main` is upstream `d1081dc`.
-  Branch `feat/fortis-platform-migration` pushed.
-- Memory mirror: `odd/fortis-platform-migration/tasks.md` (markdown stands in for
-  Engram, user decision). Update both files together.
+- Fork: `LucasOliveira-dev2026/ativva-crm`; branch `feat/fortis-platform-migration` pushed.
+- T6b.2 verification record pushed in `75cb81e82`.
+- Local unowned `.gitignore` change adds `.atl/`; preserve, do not commit.
 
-## T6b task breakdown (one ODD task per item)
+## T6b task breakdown
 
-- [x] **T6b.1 — Reproducible Prisma introspection**. Scope: disposable PostgreSQL
-  17/pgvector script applying platform prelude, baseline and tenancy overlay in
-  their required roles; introspection limited to `public`, `identity`, and
-  `object_storage`; preserve `vector` as `Unsupported`; commit generated schema
-  and client; verify freshness in CI. Acceptance evidence: two script runs
-  produced identical schema/client output (`45b3b830…` aggregate SHA-256 both
-  runs); Prisma introspected 175 models and retained
-  `ai_chunks.embedding Unsupported("vector")`; Prisma schema validation passed;
-  CI freshness test models a clean committed result and detects stale output.
-  RED: `bash tests/shell/prisma-introspection.test.sh` failed before the script
-  existed; GREEN: focused test passed after implementation. DB suite:
-  `pnpm test:db:fortis --reporter=json --outputFile=/tmp/t6b-fortis-db-retry.json`
-  exit 0, 2333 passed, 0 failed, 1 pending, 738 suites. Other evidence:
-  `pnpm typecheck` exit 0; rule tests 29/29; baseline/inventory/ratchet/eslint/
-  focused script test/Prisma validate/`git diff --check` all exit 0. Inventory
-  outputs were regenerated by the authoritative generator because tracked
-  `package.json` and `lib/db/index.ts` changed signals/line numbers. Commit:
-  pending in this work unit.
-- [x] **T6b.2 — Shared database configuration**. Scope: add `DATABASE_URL` to
-  the validated `env` contract and `.env.example`, and expose a shared `db()`
-  instance backed by `createDatabase` and the existing `lib/db` transaction
-  contract. Preserve build-phase placeholder behavior and avoid creating a
-  Prisma pool during module import when configuration is unavailable. Acceptance:
-  focused tests prove URL validation, one shared database instance per process,
-  and lazy creation/clear failure for missing configuration; `lib/db` transaction
-  tests remain green; `pnpm typecheck` passes. No application modules are switched
-  from Supabase in this task. RED was observed (URL tests passed while shared-db
-  tests failed); after edits, focused tests reported 4/4 passing and `pnpm typecheck`
-  exited 0. Verification: `pnpm test:db:fortis --reporter=json
-  --outputFile=/tmp/t6b2-db.json` exited 0; JSON reported 738/738 suites passed,
-  2333 passed, 0 failed, 1 pending (full log `/tmp/t6b2-db.log`). Docker throwaway
-  container `ativva-crm-test-db-364680` was removed by the harness. No failures.
-  ODD verification record committed as `<pending>` in this work unit.
-- [ ] **T6b.3 — Keycloak session and tenant context**. Scope: implement the BFF
-  session using HttpOnly/Secure/SameSite=Strict cookies; resolve the Keycloak
-  `sub` through `identity.users`; make `loadAuthUser`/`requireRole` provide the
-  validated `TenantContext`. Write client/realm JSON and code only; do not apply
-  realm changes. Acceptance: auth and tenant-context tests cover valid session,
-  missing identity, role authorization, and cookie security attributes; no
-  realm mutation occurs without the explicit approval required by ADR-0003.
-  Next: map current auth entry points and ADR-0003 before writing tests.
-- [ ] **T6b.4 — Platform service adapters**. Scope: replace the app-facing
-  storage, realtime, and Redis adapter boundaries with S3/MinIO + `object_storage`,
-  Socket.IO events emitted through `onCommit` while preserving the
-  `useRealtimeChannel` API, and Fortis Redis in place of Upstash REST. Acceptance:
-  focused tests cover object authorization/metadata, post-commit-only realtime
-  emission and rollback suppression, and Redis operations; browser/API contracts
-  remain compatible. Next: map existing consumers and the relevant ADRs before
-  selecting the smallest bounded adapter implementation.
-- [ ] **T6b.5 — Atomic adapter readiness gate**. Scope: prove all replacement
-  foundations needed for the coordinated cutover are ready, without deploying
-  or leaving runtime reads split between Supabase and Fortis. Acceptance:
-  required adapter contract tests and compile/static checks pass together; the
-  ODD record explicitly states the end-to-end app remains unavailable until
-  coordinated module migration and cutover. Next: review T6b.1–T6b.4 evidence
-  and identify dependencies for the first full module migration.
+### T6b.1 — Reproducible Prisma introspection [x]
+
+Completed and pushed previously. Generated schema/client reproducible; 175 models,
+`ai_chunks.embedding Unsupported("vector")`, schema validation and CI freshness covered.
+
+### T6b.2 — Shared database configuration [x]
+
+`DATABASE_URL` env contract and `.env.example`; lazy process-shared `db()` backed by
+`createDatabase`; focused validation/singleton tests 4/4; `pnpm typecheck` previously
+passed. Full Fortis DB suite evidence above. No app module switched.
+
+### T6b.3 — Keycloak session and tenant context [in progress]
+
+Scope: BFF session with HttpOnly/Secure/SameSite=Strict, resolve validated Keycloak
+`sub` through `identity.users`, expose validated `TenantContext` through auth while
+keeping `AuthUser`/`ActiveOrg` as projections. No realm mutation and no second OIDC
+implementation; reuse ATIVVA BFF. Current completed slice only maps an already validated
+principal to DB context. Focused Vitest, Prettier check, and `NODE_OPTIONS=--max-old-space-size=8192
+pnpm typecheck` pass. File-level ESLint invocation is unavailable due harness JSON parse
+failure (exit 2). Pending: shared BFF session validation and lookup wiring,
+context/projection integration with existing auth, cookie tests, role tests under new
+principal source, and coordinated ATIVVA handoff. Details:
+- Identity model: `prisma/schema.prisma` (`identity.users`, `sessions`), generated
+  client under `lib/db/generated`; source DDL `database/platform/0001_fortis_platform.sql`.
+- Auth current source: `lib/auth/server.ts` still calls Supabase `auth.getUser()` and
+  resolves Supabase memberships; `lib/auth/require-role.ts` retains database RPC role
+  check via Supabase. Avoid mixed runtime until atomic cutover.
+- ADR: `docs/fortis/adr/0003-identity-keycloak.md` is proposed; reuse the ATIVVA BFF
+  at `/home/lucas/orca/Ativva/apps/web/src/app/api/auth/*`; no realm edits here.
+- ATIVVA-side work is excluded from this repo; handoff details are below.
+
+### T6b.4 — Platform service adapters [ ]
+
+Shared adapters: S3/MinIO and object metadata authorization, Socket.IO emission only
+via `onCommit`, Redis Fortis. Existing consumers remain unchanged until coordinated
+cutover. Test object authorization/metadata, post-commit and rollback behavior, Redis
+ops, and preserve current browser/API contracts.
+
+### T6b.5 — Atomic adapter readiness gate [ ]
+
+Run combined contract tests and static checks; explicitly assert app remains
+non-operational until coordinated auth/data/storage/realtime cutover. Never leave
+runtime split across providers.
+
+## ATIVVA integration handoff
+
+ATIVVA repository must be coordinated separately; do not edit it from this CRM task.
+
+- **BFF/session:** reuse `/home/lucas/orca/Ativva/apps/web/src/app/api/auth/*` modules
+  (`oidc-config.ts`, `oidc-transaction.ts`, `transaction-store.ts`, `session-custody.ts`,
+  `refresh/`, `logout/`, `callback/`). Add CRM-specific `ativva-crm` client config and
+  exact callback/logout redirect contracts per ADR-0003. Browser holds opaque
+  HttpOnly/Secure/SameSite=Strict cookie; server validates token/session and resolves
+  verified claims `{sub,sid,acr,amr}`. CRM does not implement parallel OIDC.
+- **Chatwoot touchpoints:** coordinator must inventory using the authorized read-only
+  search `grep -rn -i chatwoot /home/lucas/orca/Ativva/apps /home/lucas/orca/Ativva/infra`.
+  For each hit, replace/repoint to the CRM contract only after API/event schemas are
+  settled; no unverified endpoint or event names asserted here.
+- **CRM identity contract:** verified `sub` maps only to
+  `identity.users.external_identity_id`; internal `users.id` is the tenant DB user id.
+  `sid` maps to UUID `identity.sessions.id`; `acr`/`amr` produce AAL and MFA-factor
+  mirror per ADR. Missing or disabled identity must fail closed. CRM membership and
+  role authorization stay in `user_organizations`/policies; role RPC remains authority.
+- **Realm:** proposed confidential `ativva-crm` client, authorization code + PKCE,
+  `fullScopeAllowed: false`, exact redirect URIs; service account narrowly scoped to
+  `manage-users` only if signup/invites require it. Snapshot + explicit owner approval
+  required before applying any change. This work has not applied it.
+- **Environment:** coordinate names/values for issuer, internal Keycloak URL, client ID,
+  client secret, redirect/app base URL, Redis BFF custody, and any callback allowlist.
+  Never put secrets in git/docs or log them; add CRM env declarations in `.env.example`
+  and `lib/env.ts` only once contract names/defaults are approved.
+- **Data migration:** preserve UUID identity references across 66 domain FKs; link existing
+  CRM users to Keycloak by explicit validated identity mapping, never email-only; reconcile
+  duplicate/missing subjects before enabling cutover; mirror sessions and MFA factors per ADR.
+  Exact backfill/source procedure remains to be designed with owner and ATIVVA coordinator.
 
 ## Next Step
 
-T6b.1 is committed as `0f551f441`; T6b.2 implementation is `fd4f463be` and is now
-verified by the full Fortis DB suite (exit 0, 2333 passed, 0 failed, 1 pending,
-738 suites passed). Next: T6b.3. Add the validated TenantContext compatibly, keeping
-`AuthUser`/`ActiveOrg` as projections from that single source of truth. T6b.4 builds
-shared adapters only; current consumers stay unchanged until atomic cutover. Do not
-apply realm changes, migrate an app module, or deploy before coordinated readiness.
-Subagents per the user's rule: haiku for search, sonnet for triage and mechanical
-rewrites, opus only for hard contract design. No deployment until the atomic
-cutover is complete.
-Note: the ratchet excludes the Fortis-owned `fortis-platform.yml` and
-`vitest.db.fortis.config.ts` (they name Supabase on purpose; CI would fail otherwise).
+T6b.3 remains in progress. Current CRM slice is the validated-principal-to-`TenantContext`
+helper plus 8 focused passing tests. Official check `NODE_OPTIONS=--max-old-space-size=8192
+pnpm typecheck` passed. Projection/auth integration cannot safely precede shared BFF and
+atomic cutover; ATIVVA handoff is recorded above. Native review unavailable as recorded;
+CI plus coordinator review is check of record. Next action: coordinator to dispatch ATIVVA
+BFF integration, then continue CRM identity/auth wiring without realm mutation. No app
+module migration, deploy, merge or PR performed.
