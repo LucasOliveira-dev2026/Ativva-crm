@@ -12,7 +12,13 @@ const identityRecordSchema = z.object({
   disabled_at: z.date().nullable(),
 });
 
-/** Resolve an already BFF-validated principal to its internal Fortis identity. */
+const sessionRecordSchema = z.object({
+  id: z.guid(),
+  user_id: z.guid(),
+  not_after: z.date().nullable(),
+});
+
+/** Resolve an already BFF-validated principal to its active Fortis identity. */
 export async function resolveTenantContext(
   principal: ValidatedPrincipal,
   activeCompanyId: string | null,
@@ -22,16 +28,30 @@ export async function resolveTenantContext(
       where: { external_identity_id: principal.sub },
       select: { id: true, external_identity_id: true, disabled_at: true },
     });
-    const parsed = identityRecordSchema.safeParse(identity);
-    if (!parsed.success) {
+    const parsedIdentity = identityRecordSchema.safeParse(identity);
+    if (!parsedIdentity.success || parsedIdentity.data.disabled_at !== null) {
       throw new Error("validated principal has no enabled internal identity");
     }
+
+    const session = await tx.sessions.findUnique({
+      where: { id: principal.sid },
+      select: { id: true, user_id: true, not_after: true },
+    });
+    const parsedSession = sessionRecordSchema.safeParse(session);
+    if (
+      !parsedSession.success ||
+      parsedSession.data.user_id !== parsedIdentity.data.id ||
+      (parsedSession.data.not_after !== null && parsedSession.data.not_after <= new Date())
+    ) {
+      throw new Error("validated principal has no active Fortis session");
+    }
+
     return tenantContextFromValidatedPrincipal({
       principal,
       identity: {
-        id: parsed.data.id,
-        externalIdentityId: parsed.data.external_identity_id,
-        disabled: parsed.data.disabled_at !== null,
+        id: parsedIdentity.data.id,
+        externalIdentityId: parsedIdentity.data.external_identity_id,
+        disabled: false,
       },
       activeCompanyId,
     });
