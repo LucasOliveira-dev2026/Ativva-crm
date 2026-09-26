@@ -224,11 +224,12 @@ lib/auth/tenant-context.ts lib/auth/tenant-context.test.ts` passes. Initial test
   an ATIVVA handoff, not a reason to block CRM-only work. `lib/auth/identity.ts` now
   resolves exact opaque `sub` through `identity.users.external_identity_id` inside
   `runPlatformTransaction("auth")`; absent, disabled, malformed, or mismatched rows fail
-  closed through the pure mapper. ADR-0003 and platform DDL also require `sid` to resolve
-  to an active `identity.sessions` row owned by the identity; resolver checks owner and
-  `not_after`, failing closed on absent, foreign, or expired sessions. Combined auth tests
-  pass 24/24 and `NODE_OPTIONS=--max-old-space-size=8192 pnpm typecheck` passes. Resolver
-  remains groundwork only; `loadAuthUser` does not call it. Attempted
+  closed through the pure mapper. ADR-0003 and platform DDL require `sid` to resolve to an
+  active `identity.sessions` row owned by the identity. Resolver checks owner, `not_after`,
+  and session `aal` against validated `acr`; absent, foreign, expired, invalid, or mismatched
+  sessions fail closed. TDD added assurance mismatch/invalid cases (RED observed, then fixed);
+  combined auth tests pass 26/26 and `NODE_OPTIONS=--max-old-space-size=8192 pnpm typecheck`
+  passes. Resolver remains groundwork only; `loadAuthUser` does not call it. Attempted
   `pnpm exec eslint lib/auth/tenant-context.ts lib/auth/tenant-context.test.ts` twice;
   the harness exited 2 with `ESLint output (JSON parse failed: EOF while parsing a value...)`,
   so file-level lint remains unavailable, not passed. Added `lib/auth/validated-principal.ts`

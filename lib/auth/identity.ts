@@ -15,6 +15,7 @@ const identityRecordSchema = z.object({
 const sessionRecordSchema = z.object({
   id: z.guid(),
   user_id: z.guid(),
+  aal: z.enum(["aal1", "aal2"]),
   not_after: z.date().nullable(),
 });
 
@@ -35,12 +36,13 @@ export async function resolveTenantContext(
 
     const session = await tx.sessions.findUnique({
       where: { id: principal.sid },
-      select: { id: true, user_id: true, not_after: true },
+      select: { id: true, user_id: true, aal: true, not_after: true },
     });
     const parsedSession = sessionRecordSchema.safeParse(session);
     if (
       !parsedSession.success ||
       parsedSession.data.user_id !== parsedIdentity.data.id ||
+      parsedSession.data.aal !== principal.acr ||
       (parsedSession.data.not_after !== null && parsedSession.data.not_after <= new Date())
     ) {
       throw new Error("validated principal has no active Fortis session");

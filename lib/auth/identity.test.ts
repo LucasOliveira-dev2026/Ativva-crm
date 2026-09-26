@@ -30,6 +30,7 @@ const identity = {
 const session = {
   id: principal.sid,
   user_id: userId,
+  aal: "aal2",
   not_after: null,
 };
 
@@ -60,7 +61,7 @@ describe("resolveTenantContext", () => {
     });
     expect(mocks.findSession).toHaveBeenCalledWith({
       where: { id: principal.sid },
-      select: { id: true, user_id: true, not_after: true },
+      select: { id: true, user_id: true, aal: true, not_after: true },
     });
   });
 
@@ -79,6 +80,8 @@ describe("resolveTenantContext", () => {
     ["missing", null],
     ["owned by another user", { ...session, user_id: "55555555-5555-4555-8555-555555555555" }],
     ["expired", { ...session, not_after: new Date(Date.now() - 1) }],
+    ["assurance mismatch", { ...session, aal: "aal1" }],
+    ["invalid assurance", { ...session, aal: "unknown" }],
   ])("fails closed for %s session", async (_label, row) => {
     mocks.findSession.mockResolvedValue(row);
     await expect(resolveTenantContext(principal, companyId)).rejects.toThrow(
