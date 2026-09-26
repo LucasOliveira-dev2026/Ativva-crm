@@ -5,7 +5,7 @@ import type { TenantContext } from "@/lib/db";
 const uuid = z.guid();
 const validatedPrincipalSchema = z
   .object({
-    sub: uuid,
+    sub: z.string().trim().min(1),
     sid: uuid,
     acr: z.enum(["aal1", "aal2"]),
     amr: z.array(z.string().min(1)),
@@ -15,6 +15,7 @@ const validatedPrincipalSchema = z
 const identitySchema = z
   .object({
     id: uuid,
+    externalIdentityId: z.string().min(1),
     disabled: z.boolean(),
   })
   .strict();
@@ -48,6 +49,9 @@ export function tenantContextFromValidatedPrincipal(input: {
   const { principal, identity, activeCompanyId } = parsed.data;
   if (!identity || identity.disabled) {
     throw new Error("validated principal has no enabled internal identity");
+  }
+  if (identity.externalIdentityId !== principal.sub) {
+    throw new Error("validated principal identity does not match external subject");
   }
 
   return {

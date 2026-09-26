@@ -4,12 +4,16 @@ import { tenantContextFromValidatedPrincipal } from "@/lib/auth/tenant-context";
 
 const validInput = {
   principal: {
-    sub: "11111111-1111-4111-8111-111111111111",
+    sub: "keycloak|opaque-subject-123",
     sid: "22222222-2222-4222-8222-222222222222",
     acr: "aal2" as const,
     amr: ["pwd", "otp"],
   },
-  identity: { id: "33333333-3333-4333-8333-333333333333", disabled: false },
+  identity: {
+    id: "33333333-3333-4333-8333-333333333333",
+    externalIdentityId: "keycloak|opaque-subject-123",
+    disabled: false,
+  },
   activeCompanyId: "44444444-4444-4444-8444-444444444444",
 };
 
@@ -32,7 +36,12 @@ describe("tenantContextFromValidatedPrincipal", () => {
   it.each([
     ["missing identity", { identity: null }],
     ["disabled identity", { identity: { ...validInput.identity, disabled: true } }],
-    ["invalid subject", { principal: { ...validInput.principal, sub: "not-a-uuid" } }],
+    ["blank subject", { principal: { ...validInput.principal, sub: "  " } }],
+    [
+      "subject mismatch",
+      { identity: { ...validInput.identity, externalIdentityId: "another-subject" } },
+    ],
+    ["invalid internal identity id", { identity: { ...validInput.identity, id: "not-a-uuid" } }],
     ["invalid session", { principal: { ...validInput.principal, sid: "not-a-uuid" } }],
     ["invalid company", { activeCompanyId: "not-a-uuid" }],
     ["invalid assurance level", { principal: { ...validInput.principal, acr: "aal3" } }],

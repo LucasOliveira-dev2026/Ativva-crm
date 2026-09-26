@@ -208,10 +208,12 @@ pnpm test:db
   records verification; implementation is `fd4f463be`.
 - **T6b.3 current:** `lib/auth/tenant-context.ts` is a pure mapping from BFF-validated
   principal `{sub,sid,acr,amr}`, resolved identity row, and selected company to existing
-  `TenantContext`; no credential parsing or authorization decision. It rejects invalid
-  claims, absent/disabled identity and invalid company. `lib/auth/tenant-context.test.ts`
-  is 8/8 green; `pnpm exec prettier --check lib/auth/tenant-context.ts
-  lib/auth/tenant-context.test.ts` passes. Initial test-first invocation failed because the target module did not
+  `TenantContext`; no credential parsing or authorization decision. ADR-0003 defines
+  `sub` as opaque text, not UUID; mapping requires exact equality with
+  `identity.external_identity_id`, and only the internal identity UUID becomes `userId`.
+  It rejects invalid claims, absent/disabled/mismatched identity and invalid company.
+  Tests cover those contracts: 10/10 pass; `pnpm exec prettier --check
+  lib/auth/tenant-context.ts lib/auth/tenant-context.test.ts` passes. Initial test-first invocation failed because the target module did not
   exist (runner exited 1 with zero tests collected); this is not counted as valid
   behavior RED evidence. Initial typecheck hit OOM at default memory;
   `NODE_OPTIONS=--max-old-space-size=8192 pnpm typecheck` passed. The first expanded
@@ -222,9 +224,12 @@ pnpm test:db
   the harness exited 2 with `ESLint output (JSON parse failed: EOF while parsing a value...)`,
   so file-level lint remains unavailable, not passed. Projection wiring
   awaits coordinated ATIVVA BFF integration and must preserve D18.
-- **Native review:** unavailable for this candidate. Inspect refused with
-  `empty_base_diff_bootstrap_required` and returned target `sha256:a0fa7500…`, which
-  differs from requested `sha256:e3162166…`. No bootstrap, retry, or START.
+- **Native review:** unavailable for both observed T6b.3 candidates. Initial inspect
+  refused with `empty_base_diff_bootstrap_required` and returned target `sha256:a0fa7500…`
+  rather than requested `sha256:e3162166…`. After the subject-binding correction,
+  inspect again returned `empty_base_diff_bootstrap_required`, no paths, and target
+  `sha256:6fecb0c0…` rather than the newly supplied `sha256:e4beac79…`. No bootstrap,
+  retry or START.
 
 ## Triage of run 2 (resolved; confirmed by full run 4)
 
@@ -336,8 +341,8 @@ ATIVVA repository must be coordinated separately; do not edit it from this CRM t
 
 ## Next Step
 
-T6b.3 remains in progress. Current CRM slice is the validated-principal-to-`TenantContext`
-helper plus 8 focused passing tests. Official check `NODE_OPTIONS=--max-old-space-size=8192
+T6b.3 remains in progress. Current CRM slice maps an already validated BFF principal
+and exactly matched internal identity to `TenantContext`; focused tests pass 10/10. Official check `NODE_OPTIONS=--max-old-space-size=8192
 pnpm typecheck` passed. Projection/auth integration cannot safely precede shared BFF and
 atomic cutover; ATIVVA handoff is recorded above. Native review unavailable as recorded;
 CI plus coordinator review is check of record. Next action: coordinator to dispatch ATIVVA
