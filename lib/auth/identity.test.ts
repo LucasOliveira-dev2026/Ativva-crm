@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   findIdentity: vi.fn(),
   findSession: vi.fn(),
+  findMembership: vi.fn(),
   runPlatformTransaction: vi.fn(),
 }));
 vi.mock("@/lib/db", () => ({
@@ -41,10 +42,12 @@ describe("resolveTenantContext", () => {
       fn({
         users: { findUnique: mocks.findIdentity },
         sessions: { findUnique: mocks.findSession },
+        user_organizations: { findFirst: mocks.findMembership },
       }),
     );
     mocks.findIdentity.mockResolvedValue(identity);
     mocks.findSession.mockResolvedValue(session);
+    mocks.findMembership.mockResolvedValue({ user_id: userId, organization_id: companyId });
   });
 
   it("resolves identity and session and maps the opaque subject to DB context", async () => {
@@ -63,6 +66,22 @@ describe("resolveTenantContext", () => {
       where: { id: principal.sid },
       select: { id: true, user_id: true, aal: true, not_after: true },
     });
+    expect(mocks.findMembership).toHaveBeenCalledWith({
+      where: { user_id: userId, organization_id: companyId, revoked_at: null },
+      select: { organization_id: true },
+    });
+  });
+
+  it("rejects an active company without a live user membership", async () => {
+    mocks.findMembership.mockResolvedValue(null);
+    await expect(resolveTenantContext(principal, companyId)).rejects.toThrow(
+      "validated principal has no membership in active company",
+    );
+  });
+
+  it("does not query membership when there is no active company", async () => {
+    await expect(resolveTenantContext(principal, null)).resolves.toMatchObject({ companyId: null });
+    expect(mocks.findMembership).not.toHaveBeenCalled();
   });
 
   it.each([

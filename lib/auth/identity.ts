@@ -48,6 +48,20 @@ export async function resolveTenantContext(
       throw new Error("validated principal has no active Fortis session");
     }
 
+    if (activeCompanyId !== null) {
+      const membership = await tx.user_organizations.findFirst({
+        where: {
+          user_id: parsedIdentity.data.id,
+          organization_id: activeCompanyId,
+          revoked_at: null,
+        },
+        select: { organization_id: true },
+      });
+      if (!membership) {
+        throw new Error("validated principal has no membership in active company");
+      }
+    }
+
     return tenantContextFromValidatedPrincipal({
       principal,
       identity: {
