@@ -364,6 +364,9 @@ the trusted BFF boundary; it parses only the typed claims payload, not cookies o
 Its focused suite passes 6/6; `NODE_OPTIONS=--max-old-space-size=8192 pnpm typecheck`
 passes. This is a contract seam only, not connected to request runtime or `loadAuthUser`.
 ATIVVA must provide the trusted request-context integration per handoff. Storage adapter
-work remains blocked on the ADR-0004 authorization/schema mismatch. Native review unavailable
-as recorded; CI plus coordinator review is check of record. No realm mutation, app-module
-migration, deploy, merge or PR.
+work remains blocked on the ADR-0004 authorization mismatch: metadata table has no tenant
+column; current bucket policies use a UUID-first `name`, while ADR storage key adds a
+`crm/<bucket>/` prefix. Fortis DB tests can prove A/B visibility after resolving the canonical
+key contract and policy source. Realtime/Redis adapter wiring also needs approved runtime
+contract/config. Native review unavailable as recorded; CI plus coordinator review is check
+of record. No realm mutation, app-module migration, deploy, merge or PR.
