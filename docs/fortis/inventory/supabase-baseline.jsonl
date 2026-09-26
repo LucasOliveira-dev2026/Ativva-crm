@@ -1077,6 +1077,7 @@
 {"id":"SB-1c3b8b","path":"lib/conversoes/leitura-da-atribuicao.ts","category":"RUNTIME","classes":["REPLACE_DB_LAYER"]}
 {"id":"SB-e89e63","path":"lib/conversoes/registro-de-envio.ts","category":"RUNTIME","classes":["REPLACE_DB_LAYER"]}
 {"id":"SB-73a7e6","path":"lib/database.types.ts","category":"GENERATED","classes":["REPLACE_DB_LAYER"]}
+{"id":"SB-ad4940","path":"lib/db/index.ts","category":"RUNTIME","classes":["KEEP_DOMAIN_LOGIC"]}
 {"id":"SB-fd87c2","path":"lib/dev/kick-local-pipeline.test.ts","category":"TEST","classes":["DELETE_INFRA_ONLY"]}
 {"id":"SB-c27bd6","path":"lib/dev/kick-local-pipeline.ts","category":"RUNTIME","classes":["REPLACE_DB_LAYER"]}
 {"id":"SB-d85c4c","path":"lib/email/config.ts","category":"RUNTIME","classes":["REPLACE_DB_LAYER"]}

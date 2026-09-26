@@ -3,13 +3,13 @@
 > Gerado por `node scripts/fortis/inventory/generate.mjs` sobre o upstream `d1081dc231e1`.
 > Não editar à mão: altere as regras em `scripts/fortis/inventory/` e regenere.
 
-**Arquivos com dependência ou menção: 2311** · UNVERIFIED: **0**
+**Arquivos com dependência ou menção: 2312** · UNVERIFIED: **0**
 
 ## Por área
 
 | Categoria | Arquivos | Detalhe |
 | --- | --- | --- |
-| RUNTIME | 863 | [inventory/supabase-runtime.md](inventory/supabase-runtime.md) |
+| RUNTIME | 864 | [inventory/supabase-runtime.md](inventory/supabase-runtime.md) |
 | TEST | 851 | [inventory/supabase-test.md](inventory/supabase-test.md) |
 | SQL | 218 | [inventory/supabase-sql.md](inventory/supabase-sql.md) |
 | HISTORY | 144 | [inventory/supabase-history.md](inventory/supabase-history.md) |
@@ -32,7 +32,7 @@ Um arquivo pode ter mais de uma classificação. `DELETE_INFRA_ONLY` remove infr
 | REPLACE_KEYCLOAK | 208 | Keycloak realm fortis, client ativva-crm (OIDC BFF do ATIVVA, externalIdentityId) | F2 |
 | REPLACE_RLS | 182 | RLS por GUC app.current_company_id + app.current_user_id (padrão ATIVVA) | F1 |
 | HISTORICAL_ALLOWED | 144 | Registro histórico (item 70): permitido, não operacional | — |
-| KEEP_DOMAIN_LOGIC | 113 | Manter domínio; só texto/comentário cita Supabase | F8 |
+| KEEP_DOMAIN_LOGIC | 114 | Manter domínio; só texto/comentário cita Supabase | F8 |
 | REPLACE_REALTIME | 94 | Gateway Socket.IO + Redis adapter, sala company:<id> (padrão ATIVVA) | F4 |
 | REPLACE_STORAGE | 46 | ObjectStorage (S3/MinIO Fortis), prefixo company/<id>/crm, URL assinada curta | F3 |
 | REPLACE_POSTGRES | 21 | PostgreSQL 17 + pgvector próprio (database/), sem plataforma Supabase | F1 |
@@ -44,7 +44,7 @@ Um arquivo pode ter mais de uma classificação. `DELETE_INFRA_ONLY` remove infr
 | --- | --- |
 | ALTO | 1197 |
 | MÉDIO | 668 |
-| BAIXO | 446 |
+| BAIXO | 447 |
 
 ## Runtime (app, lib, components, hooks, workers)
 

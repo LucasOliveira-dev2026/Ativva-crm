@@ -1,4 +1,4 @@
-# Supabase — RUNTIME (863 arquivos)
+# Supabase — RUNTIME (864 arquivos)
 
 | ID | Arquivo | Linha/área | Classificação | Substituto Fortis | Risco | Dependências | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -677,6 +677,7 @@
 | SB-df44e4 | `lib/conversoes/estado-da-conexao.ts` | sdkImport:18 db:46,85,121 | REPLACE_DB_LAYER | F1–F8 | MÉDIO | t:ad_conversion_dispatches, t:ad_platform_connections | PENDING |
 | SB-1c3b8b | `lib/conversoes/leitura-da-atribuicao.ts` | sdkImport:14 db:45 | REPLACE_DB_LAYER | F1–F8 | MÉDIO | t:contacts | PENDING |
 | SB-e89e63 | `lib/conversoes/registro-de-envio.ts` | sdkImport:22 db:51,70 | REPLACE_DB_LAYER | F1–F8 | MÉDIO | t:ad_conversion_dispatches | PENDING |
+| SB-ad4940 | `lib/db/index.ts` |  | KEEP_DOMAIN_LOGIC | F8 | BAIXO |  | PENDING |
 | SB-c27bd6 | `lib/dev/kick-local-pipeline.ts` | sdkImport:11 db:47,72 | REPLACE_DB_LAYER | F1–F8 | MÉDIO | t:followup_enrollments, t:job_queue | PENDING |
 | SB-d85c4c | `lib/email/config.ts` | adminClient:2,32,55,79 db:33,84,96 | REPLACE_DB_LAYER | F1–F8 | ALTO | t:platform_smtp_settings | PENDING |
 | SB-214c05 | `lib/email/templates/acesso-gotrue.ts` |  | KEEP_DOMAIN_LOGIC | F8 | BAIXO |  | PENDING |
