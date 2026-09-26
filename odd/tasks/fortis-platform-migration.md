@@ -351,12 +351,13 @@ ATIVVA repository must be coordinated separately; do not edit it from this CRM t
 
 ## Next Step
 
-T6b.3 remains in progress. Current CRM slice maps an already validated BFF principal
-and exactly matched internal identity to `TenantContext`; focused tests pass 10/10. Official check `NODE_OPTIONS=--max-old-space-size=8192
-pnpm typecheck` passed. Coordinator confirms validated-principal seam is the correct
-independent CRM work now; do not parse cookies/tokens or change providers in runtime.
-Next bounded CRM work: define typed BFF principal request-context contract and derive
-`AuthUser`/`ActiveOrg` projections without dual identity resolution. The identity resolver
-is groundwork only and does not switch runtime providers. ATIVVA handoff
-remains recorded above. Native review unavailable as recorded; CI plus coordinator review
-is check of record. No realm mutation, app-module migration, deploy, merge or PR.
+T6b.3 remains in progress. CRM maps an already validated BFF principal and exactly matched
+internal identity to `TenantContext`; `lib/auth/identity.ts` performs scoped identity lookup.
+Added `lib/auth/validated-principal.ts` as a strict, branded carrier for claims returned by
+the trusted BFF boundary; it parses only the typed claims payload, not cookies or tokens.
+Its focused suite passes 6/6; `NODE_OPTIONS=--max-old-space-size=8192 pnpm typecheck`
+passes. This is a contract seam only, not connected to request runtime or `loadAuthUser`.
+ATIVVA must provide the trusted request-context integration per handoff. Storage adapter
+work remains blocked on the ADR-0004 authorization/schema mismatch. Native review unavailable
+as recorded; CI plus coordinator review is check of record. No realm mutation, app-module
+migration, deploy, merge or PR.
