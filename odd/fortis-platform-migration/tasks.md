@@ -337,6 +337,17 @@ ATIVVA repository must be coordinated separately; do not edit it from this CRM t
   exact callback/logout redirect contracts per ADR-0003. Browser holds opaque
   HttpOnly/Secure/SameSite=Strict cookie; server validates token/session and resolves
   verified claims `{sub,sid,acr,amr}`. CRM does not implement parallel OIDC.
+  **Read-only integration discovery (2026-09):** current ATIVVA Web BFF `/api/auth/me`
+  resolves `ativva_oidc` custody and proxies an API Bearer to `/api/auth/me`; response
+  contains ATIVVA `SessionUser` and permissions, not raw verified OIDC claims. ATIVVA API
+  `AuthGuard` validates Bearer through `KeycloakIdentityProvider`, sets `keycloakSub` and
+  `keycloakSessionState`; `KeycloakIdentity` exposes `sub`, `sessionState`, expiry, email,
+  username, but not `sid`, `acr`, or `amr`. No CRM-specific BFF client/callback or trusted
+  cross-app principal handoff was found in inspected files. ATIVVA work required: agree a
+  server-authenticated CRM principal contract carrying verified `sub,sid,acr,amr` and
+  assurance provenance; do not treat `/api/auth/me`'s `SessionUser` JSON, caller headers,
+  or opaque cookie handle as that authority. This discovery is confirmed only for the
+  inspected route/provider files, not a complete repository-wide inventory.
 - **Chatwoot touchpoints:** coordinator must inventory using the authorized read-only
   search `grep -rn -i chatwoot /home/lucas/orca/Ativva/apps /home/lucas/orca/Ativva/infra`.
   For each hit, replace/repoint to the CRM contract only after API/event schemas are
@@ -368,8 +379,9 @@ the trusted BFF boundary, plus AsyncLocalStorage request scope (`withBffValidate
 `getBffValidatedPrincipal`) to isolate concurrent requests. Scope tests first failed because
 those exports were absent, then passed 2/2. Combined auth tests pass 21/21;
 `NODE_OPTIONS=--max-old-space-size=8192 pnpm typecheck` passes. This is a request-context
-seam only, not connected to Next request runtime or `loadAuthUser`; ATIVVA must bind the
-trusted principal per handoff. Storage adapter
+seam only, not connected to Next request runtime or `loadAuthUser`; ATIVVA must provide a trusted principal contract: inspected `/api/auth/me` returns its
+own SessionUser/permissions, while API identity validation currently does not expose
+`sid,acr,amr`; see exact handoff. Storage adapter
 work remains blocked on the ADR-0004 authorization mismatch: metadata table has no tenant
 column; current bucket policies use a UUID-first `name`, while ADR storage key adds a
 `crm/<bucket>/` prefix. Fortis DB tests can prove A/B visibility after resolving the canonical
