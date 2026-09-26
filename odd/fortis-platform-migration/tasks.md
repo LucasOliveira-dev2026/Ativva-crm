@@ -296,6 +296,7 @@ pnpm test:db   # upstream reference harness (Supabase stubs), same commit
   tests remain green; `pnpm typecheck` passes. No application modules are switched
   from Supabase in this task. Next: write tests for env validation and shared
   instance lifecycle before production code, then run the Fortis DB tests.
+  Status: ODD task specification committed as `06de2e0e3`; implementation not started.
 - [ ] **T6b.3 — Keycloak session and tenant context**. Scope: implement the BFF
   session using HttpOnly/Secure/SameSite=Strict cookies; resolve the Keycloak
   `sub` through `identity.users`; make `loadAuthUser`/`requireRole` provide the
