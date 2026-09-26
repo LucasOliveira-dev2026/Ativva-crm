@@ -23,6 +23,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { z } from "zod";
 
+import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
 
 import { PrismaClient, type Prisma } from "./generated/client";
@@ -72,6 +73,16 @@ export type Database = {
 };
 
 type Scope = { key: string; tx: Transaction; afterCommit: Array<() => unknown> };
+
+let sharedDatabase: Database | undefined;
+
+/** Lazily creates the process-wide database so importing this module needs no runtime URL. */
+export function db(): Database {
+  if (sharedDatabase) return sharedDatabase;
+  if (!env.DATABASE_URL) throw new Error("DATABASE_URL is required to use the Fortis database");
+  sharedDatabase = createDatabase({ url: env.DATABASE_URL });
+  return sharedDatabase;
+}
 
 export function createDatabase(options: { url: string; maxConnections?: number }): Database {
   const client = new PrismaClient({

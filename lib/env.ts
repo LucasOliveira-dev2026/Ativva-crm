@@ -131,6 +131,9 @@ const schema = z.object({
    */
   AI_CRED_AES_KEY: required("AI_CRED_AES_KEY"),
 
+  // Fortis PostgreSQL connection used by the shared Prisma data layer.
+  DATABASE_URL: z.union([z.literal(""), z.string().url()]).default(""),
+
   // Postgres direto do Supabase (Settings → Database) — só as rotas de skills
   // instaláveis (import/install) usam `pg` cru (mesmo pool do agent-engine).
   SUPABASE_DB_URL: required("SUPABASE_DB_URL"),

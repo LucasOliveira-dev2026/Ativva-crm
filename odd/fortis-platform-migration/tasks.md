@@ -294,9 +294,14 @@ pnpm test:db   # upstream reference harness (Supabase stubs), same commit
   focused tests prove URL validation, one shared database instance per process,
   and lazy creation/clear failure for missing configuration; `lib/db` transaction
   tests remain green; `pnpm typecheck` passes. No application modules are switched
-  from Supabase in this task. Next: write tests for env validation and shared
-  instance lifecycle before production code, then run the Fortis DB tests.
-  Status: ODD task specification committed as `06de2e0e3`; implementation not started.
+  from Supabase in this task. Next: fix focused test coverage so it proves lazy
+  singleton behavior and missing-config failure, then rerun the Fortis DB suite.
+  Status: implementation partial and uncommitted. RED was observed (URL tests
+  passed while shared-db tests failed); after edits, focused tests report 4/4
+  passing and `pnpm typecheck` exits 0. The Fortis DB suite exceeded 25 minutes
+  without a final report or exit code, so transaction-suite acceptance is
+  unverified. Do not close/commit until this check completes or a bounded
+  equivalent is verified and the singleton test directly asserts the contract.
 - [ ] **T6b.3 — Keycloak session and tenant context**. Scope: implement the BFF
   session using HttpOnly/Secure/SameSite=Strict cookies; resolve the Keycloak
   `sub` through `identity.users`; make `loadAuthUser`/`requireRole` provide the
@@ -323,12 +328,11 @@ pnpm test:db   # upstream reference harness (Supabase stubs), same commit
 
 ## Next Step
 
-T6b.1 is committed as `0f551f441`. Start **T6b.2 only**: add `DATABASE_URL` to
-`lib/env.ts` and `.env.example`, then expose a shared `db()` client while
-preserving the existing transaction contract. Begin with tests for URL validation
-and shared-instance lifecycle before implementation. Do not migrate an application
-module in T6b.2; that begins only after auth and adapters are ready for the
-coordinated cutover.
+T6b.1 is committed as `0f551f441`. **T6b.2 is in progress**: `DATABASE_URL`
+was added to `lib/env.ts` and `.env.example`; `db()` is lazy. Focused tests pass
+4/4 and `pnpm typecheck` passes, but full Fortis DB verification timed out without
+final counts. Do not migrate an application module in T6b.2; that begins only after
+auth and adapters are ready for the coordinated cutover.
 Subagents per the user's rule: haiku for search, sonnet for triage and mechanical
 rewrites, opus only for hard contract design. No deployment until the atomic
 cutover is complete.
