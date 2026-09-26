@@ -67,20 +67,20 @@ One identity (SSO with ATIVVA), one tenancy model, one operational stack.
 
 ## Context map (where things live)
 
-| What | Path |
-| --- | --- |
-| Upstream base record | `docs/fortis/upstream.json` (base `aaf1b3b`, MIT) |
+| What                                | Path                                                                                                                                   |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Upstream base record                | `docs/fortis/upstream.json` (base `aaf1b3b`, MIT)                                                                                      |
 | Inventory generator (rules + tests) | `scripts/fortis/inventory/*.mjs` → `docs/fortis/SUPABASE-MIGRATION-INVENTORY.md`, `FUNCTIONAL-INVENTORY.md`, `docs/fortis/inventory/*` |
-| Parity matrix | `docs/fortis/FUNCTIONAL-PARITY-REPORT.md` |
-| F0 report / ADRs / sync guide | `docs/fortis/PLATFORM-MIGRATION-REPORT.md`, `docs/fortis/adr/0001..0006`, `docs/fortis/UPSTREAM-SYNC.md` |
-| Platform prelude (superuser, once) | `database/platform/0001_fortis_platform.sql` |
-| Neutral schema (generated) | `database/baseline/baseline.sql` ← `scripts/fortis/baseline/build.mjs` ← `neutralize.mjs` |
-| Tenancy overlay (after baseline) | `database/platform/0100_fortis_tenancy.sql` |
-| Test-only fixtures | `database/testing/fixtures.sql` |
-| DB test codemod (load-time) | `scripts/fortis/testing/test-codemod.mjs` + `vitest.db.fortis.config.ts` |
-| Fortis DB harness | `scripts/fortis/test-db.sh` (`pnpm test:db:fortis`) |
-| Zero-Supabase ratchet | `scripts/fortis/zero-supabase-gate.mjs`, `ratchet.mjs`, baseline `docs/fortis/inventory/supabase-baseline.jsonl` |
-| CI (own file, no upstream edits) | `.github/workflows/fortis-platform.yml` |
+| Parity matrix                       | `docs/fortis/FUNCTIONAL-PARITY-REPORT.md`                                                                                              |
+| F0 report / ADRs / sync guide       | `docs/fortis/PLATFORM-MIGRATION-REPORT.md`, `docs/fortis/adr/0001..0006`, `docs/fortis/UPSTREAM-SYNC.md`                               |
+| Platform prelude (superuser, once)  | `database/platform/0001_fortis_platform.sql`                                                                                           |
+| Neutral schema (generated)          | `database/baseline/baseline.sql` ← `scripts/fortis/baseline/build.mjs` ← `neutralize.mjs`                                              |
+| Tenancy overlay (after baseline)    | `database/platform/0100_fortis_tenancy.sql`                                                                                            |
+| Test-only fixtures                  | `database/testing/fixtures.sql`                                                                                                        |
+| DB test codemod (load-time)         | `scripts/fortis/testing/test-codemod.mjs` + `vitest.db.fortis.config.ts`                                                               |
+| Fortis DB harness                   | `scripts/fortis/test-db.sh` (`pnpm test:db:fortis`)                                                                                    |
+| Zero-Supabase ratchet               | `scripts/fortis/zero-supabase-gate.mjs`, `ratchet.mjs`, baseline `docs/fortis/inventory/supabase-baseline.jsonl`                       |
+| CI (own file, no upstream edits)    | `.github/workflows/fortis-platform.yml`                                                                                                |
 
 ## Decisions (with reason)
 
@@ -136,7 +136,7 @@ One identity (SSO with ATIVVA), one tenancy model, one operational stack.
   a Fortis edit to an upstream unit test (expect a small sync conflict).
 - **D16 `lib/db` contract** (ADR-0001): one pool as `crm_app`; scopes differ by
   role. Tenant: `SET LOCAL ROLE crm_authenticated` + `app.current_user_id /
-  company_id / aal / session_id` (zod-validated, `z.guid()` = Postgres uuid).
+company_id / aal / session_id` (zod-validated, `z.guid()` = Postgres uuid).
   Platform: `SET LOCAL ROLE crm_service`, `lock_timeout = 0`, typed reason in
   `app.platform_reason` (`PLATFORM_REASONS`). Nested call reuses the outer
   transaction only for an identical scope, else `DbScopeError` (no silent
@@ -213,36 +213,45 @@ pnpm test:db
   `identity.external_identity_id`, and only the internal identity UUID becomes `userId`.
   It rejects invalid claims, absent/disabled/mismatched identity and invalid company.
   Tests cover those contracts: 10/10 pass; `pnpm exec prettier --check
-  lib/auth/tenant-context.ts lib/auth/tenant-context.test.ts` passes. Initial test-first invocation failed because the target module did not
+lib/auth/tenant-context.ts lib/auth/tenant-context.test.ts` passes. Initial test-first invocation failed because the target module did not
   exist (runner exited 1 with zero tests collected); this is not counted as valid
   behavior RED evidence. Initial typecheck hit OOM at default memory;
   `NODE_OPTIONS=--max-old-space-size=8192 pnpm typecheck` passed. The first expanded
   direct tsc run caught test fixture literal widening; adding `as const` fixed it.
   `AuthUser`, `ActiveOrg`, `loadAuthUser`, and `requireRole` remain Supabase-backed;
-  this seam alone does not switch runtime or make app operational. Attempted
+  this seam alone does not switch runtime or make app operational. Coordinator clarified
+  source during T6b.3: use this validated-principal seam now; BFF validation wiring is
+  an ATIVVA handoff, not a reason to block CRM-only work. `lib/auth/identity.ts` now
+  resolves exact opaque `sub` through `identity.users.external_identity_id` inside
+  `runPlatformTransaction("auth")`; absent, disabled, malformed, or mismatched rows fail
+  closed through the pure mapper. `lib/auth/identity.test.ts` covers lookup and failures;
+  combined auth tests pass 13/13, and `NODE_OPTIONS=--max-old-space-size=8192 pnpm typecheck`
+  passes. Resolver is groundwork only; `loadAuthUser` does not call it. Attempted
   `pnpm exec eslint lib/auth/tenant-context.ts lib/auth/tenant-context.test.ts` twice;
   the harness exited 2 with `ESLint output (JSON parse failed: EOF while parsing a value...)`,
-  so file-level lint remains unavailable, not passed. Projection wiring
-  awaits coordinated ATIVVA BFF integration and must preserve D18.
+  so file-level lint remains unavailable, not passed. Projection wiring awaits a typed
+  BFF principal request-context contract; preserve D18 and avoid dual identity resolution.
 - **Native review:** unavailable for both observed T6b.3 candidates. Initial inspect
   refused with `empty_base_diff_bootstrap_required` and returned target `sha256:a0fa7500…`
   rather than requested `sha256:e3162166…`. After the subject-binding correction,
   inspect again returned `empty_base_diff_bootstrap_required`, no paths, and target
-  `sha256:6fecb0c0…` rather than the newly supplied `sha256:e4beac79…`. No bootstrap,
+  `sha256:6fecb0c0…` rather than the newly supplied `sha256:e4beac79…`. A later inspect
+  failed safely before native mutation (`unrelated target status is inconsistent`,
+  `retry_safe: true`). Standing orders say do not retry unavailable review. No bootstrap,
   retry or START.
 
 ## Triage of run 2 (resolved; confirmed by full run 4)
 
-| Cause | Fix |
-| --- | --- |
-| Tests read/apply upstream migration files | neutral copies in `database/upstream-migrations/` + codemod path mapping (D10) |
-| Tests read baseline via `join(…, "supabase", "baseline.sql")` | path-parts rule (D10) |
-| Role words in camelCase keys, object keys, `role:priv` strings | D9 boundaries |
-| Probe objects created by `postgres` vs definers owned by `crm_owner` | fixtures `grant postgres to crm_owner` (D10) |
-| Support sessions missing from `fn_user_org_ids()` | overlay re-states upstream body + hash guard (D12) |
-| Regex spellings of `auth.uid()` in scanners | codemod rules (D10) |
-| Ordered role strings | role names preserving order (D13) |
-| `gate-ativacao.ts` asked for `service_role` | D14 |
+| Cause                                                                | Fix                                                                            |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Tests read/apply upstream migration files                            | neutral copies in `database/upstream-migrations/` + codemod path mapping (D10) |
+| Tests read baseline via `join(…, "supabase", "baseline.sql")`        | path-parts rule (D10)                                                          |
+| Role words in camelCase keys, object keys, `role:priv` strings       | D9 boundaries                                                                  |
+| Probe objects created by `postgres` vs definers owned by `crm_owner` | fixtures `grant postgres to crm_owner` (D10)                                   |
+| Support sessions missing from `fn_user_org_ids()`                    | overlay re-states upstream body + hash guard (D12)                             |
+| Regex spellings of `auth.uid()` in scanners                          | codemod rules (D10)                                                            |
+| Ordered role strings                                                 | role names preserving order (D13)                                              |
+| `gate-ativacao.ts` asked for `service_role`                          | D14                                                                            |
 
 ## Environment notes (for the next agent)
 
@@ -285,6 +294,7 @@ pnpm typecheck` pass. File-level ESLint invocation is unavailable due harness JS
 failure (exit 2). Pending: shared BFF session validation and lookup wiring,
 context/projection integration with existing auth, cookie tests, role tests under new
 principal source, and coordinated ATIVVA handoff. Details:
+
 - Identity model: `prisma/schema.prisma` (`identity.users`, `sessions`), generated
   client under `lib/db/generated`; source DDL `database/platform/0001_fortis_platform.sql`.
 - Auth current source: `lib/auth/server.ts` still calls Supabase `auth.getUser()` and
@@ -343,8 +353,10 @@ ATIVVA repository must be coordinated separately; do not edit it from this CRM t
 
 T6b.3 remains in progress. Current CRM slice maps an already validated BFF principal
 and exactly matched internal identity to `TenantContext`; focused tests pass 10/10. Official check `NODE_OPTIONS=--max-old-space-size=8192
-pnpm typecheck` passed. Projection/auth integration cannot safely precede shared BFF and
-atomic cutover; ATIVVA handoff is recorded above. Native review unavailable as recorded;
-CI plus coordinator review is check of record. Next action: coordinator to dispatch ATIVVA
-BFF integration, then continue CRM identity/auth wiring without realm mutation. No app
-module migration, deploy, merge or PR performed.
+pnpm typecheck` passed. Coordinator confirms validated-principal seam is the correct
+independent CRM work now; do not parse cookies/tokens or change providers in runtime.
+Next bounded CRM work: define typed BFF principal request-context contract and derive
+`AuthUser`/`ActiveOrg` projections without dual identity resolution. The identity resolver
+is groundwork only and does not switch runtime providers. ATIVVA handoff
+remains recorded above. Native review unavailable as recorded; CI plus coordinator review
+is check of record. No realm mutation, app-module migration, deploy, merge or PR.
