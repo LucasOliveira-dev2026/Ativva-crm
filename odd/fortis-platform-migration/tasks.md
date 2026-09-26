@@ -67,7 +67,7 @@ One identity (SSO with ATIVVA), one tenancy model, one operational stack.
 - [x] T6x Upstream unit test `pdf-extractor` fixed (was failing on the upstream
       base too): tsx subprocess runs a script FILE instead of `--eval` (D17)
 - [ ] T6b Prisma schema from the neutral DB (`db pull`) + first module moved off
-      the Supabase client (strangling starts)
+      the Supabase client (strangling starts), decomposed into T6b.1–T6b.5 below
 - [ ] T7 F2 Keycloak client `ativva-crm` (ADR-0003 proposed; realm change needs approval)
 - [ ] T8 F3 object storage · T9 F4 realtime · T10 F5 Redis/workers · T11 F6 n8n
 - [ ] T12 F7 installer/backup/deploy · T13 F8 remove SDK/env (`--strict`) · T14 F9 parity · T15 F10 ATIVVA
@@ -161,6 +161,18 @@ One identity (SSO with ATIVVA), one tenancy model, one operational stack.
   trivial module); from a script file the named exports exist — which is how the
   worker runs. The upstream test now writes a temp `.cjs` and runs it with tsx
   (Fortis edit of an upstream test; worth proposing upstream).
+- **D18 Atomic platform cutover; no dual-stack**: the application must never read
+  some data from Supabase and other data from Fortis PostgreSQL. Keycloak auth,
+  `lib/db` data access, S3/MinIO storage, and Socket.IO realtime move together on
+  this feature branch; intermediate commits must compile and pass applicable
+  suites, but end-to-end app operation is accepted only after the coordinated
+  cutover. Nothing is deployed until that point. Rationale: mixed identity,
+  data, storage, or realtime providers would split authorization and consistency
+  boundaries, making tenant isolation and feature parity unprovable. Consequence:
+  T6b prepares shared adapters and schemas without claiming the application is
+  operational; module migration and removal of Supabase remain gated by the
+  integrated replacement path. Supersedes any interpretation of T6b as a
+  production-ready incremental rollout.
 - **D11 Fork location**: `LucasOliveira-dev2026/ativva-crm` (org `Fortis-solucoes`
   unreachable; GitHub App cannot create repos — user created it).
 
@@ -254,13 +266,55 @@ pnpm test:db   # upstream reference harness (Supabase stubs), same commit
 - Memory mirror: `odd/fortis-platform-migration/tasks.md` (markdown stands in for
   Engram, user decision). Update both files together.
 
+## T6b task breakdown (one ODD task per item)
+
+- [ ] **T6b.1 — Reproducible Prisma introspection**. Scope: add a reproducible
+  script that starts a disposable PostgreSQL 17/pgvector database, applies
+  `database/platform/0001_fortis_platform.sql`, `database/baseline/baseline.sql`
+  as `crm_owner`, then `database/platform/0100_fortis_tenancy.sql`, and runs
+  `prisma db pull` for `public`, `identity`, and `object_storage`; keep `vector`
+  columns as `Unsupported`, regenerate and commit the Prisma client, and add a
+  CI freshness check. Acceptance: repeated script runs produce the committed
+  schema/client; introspected schemas match the three intended schemas, vector
+  fields remain `Unsupported`, and the CI check detects stale generated output.
+  Next: run the focused introspection and CI freshness checks, record evidence.
+- [ ] **T6b.2 — Shared database configuration**. Scope: add `DATABASE_URL` to
+  `lib/env.ts` and `.env.example`, and expose one shared `db()` instance backed
+  by the existing `lib/db` transaction contract. Acceptance: configuration
+  validation rejects missing/invalid URLs; focused tests prove singleton/shared
+  client behavior and existing transaction tests remain green. Next: identify
+  the project’s test pattern and implement configuration tests first.
+- [ ] **T6b.3 — Keycloak session and tenant context**. Scope: implement the BFF
+  session using HttpOnly/Secure/SameSite=Strict cookies; resolve the Keycloak
+  `sub` through `identity.users`; make `loadAuthUser`/`requireRole` provide the
+  validated `TenantContext`. Write client/realm JSON and code only; do not apply
+  realm changes. Acceptance: auth and tenant-context tests cover valid session,
+  missing identity, role authorization, and cookie security attributes; no
+  realm mutation occurs without the explicit approval required by ADR-0003.
+  Next: map current auth entry points and ADR-0003 before writing tests.
+- [ ] **T6b.4 — Platform service adapters**. Scope: replace the app-facing
+  storage, realtime, and Redis adapter boundaries with S3/MinIO + `object_storage`,
+  Socket.IO events emitted through `onCommit` while preserving the
+  `useRealtimeChannel` API, and Fortis Redis in place of Upstash REST. Acceptance:
+  focused tests cover object authorization/metadata, post-commit-only realtime
+  emission and rollback suppression, and Redis operations; browser/API contracts
+  remain compatible. Next: map existing consumers and the relevant ADRs before
+  selecting the smallest bounded adapter implementation.
+- [ ] **T6b.5 — Atomic adapter readiness gate**. Scope: prove all replacement
+  foundations needed for the coordinated cutover are ready, without deploying
+  or leaving runtime reads split between Supabase and Fortis. Acceptance:
+  required adapter contract tests and compile/static checks pass together; the
+  ODD record explicitly states the end-to-end app remains unavailable until
+  coordinated module migration and cutover. Next: review T6b.1–T6b.4 evidence
+  and identify dependencies for the first full module migration.
+
 ## Next Step
 
-T6b: pull the Prisma schema from the neutral DB (script, reproducible, with a
-`--check` in CI; `vector` columns are `Unsupported`), wire `DATABASE_URL`
-(`lib/env.ts` + `.env.example`), add a shared `db()` instance, then move the
-first small module off `supabase.from()` (pick from the graph in
-PLATFORM-MIGRATION-REPORT.md; the ratchet must go DOWN). Subagents per the
-user's rule: haiku for search, sonnet for mechanical rewrites.
+Start **T6b.1 only**: inspect the existing package scripts, Prisma config/schema,
+PostgreSQL test harness, and CI conventions; then implement the reproducible
+introspection script and freshness check under Strict TDD. Do not begin T6b.2
+until T6b.1 has observed evidence and is committed. Subagents per the user's
+rule: haiku for search, sonnet for triage and mechanical rewrites, opus only for
+hard contract design. No deployment until the atomic cutover is complete.
 Note: the ratchet excludes the Fortis-owned `fortis-platform.yml` and
 `vitest.db.fortis.config.ts` (they name Supabase on purpose; CI would fail otherwise).
