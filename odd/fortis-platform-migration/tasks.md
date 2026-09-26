@@ -236,16 +236,15 @@ lib/auth/tenant-context.ts lib/auth/tenant-context.test.ts` passes. Initial test
   passes. Resolver is groundwork only; `loadAuthUser` does not call it. Attempted
   `pnpm exec eslint lib/auth/tenant-context.ts lib/auth/tenant-context.test.ts` twice;
   the harness exited 2 with `ESLint output (JSON parse failed: EOF while parsing a value...)`,
-  so file-level lint remains unavailable, not passed. Projection wiring awaits a typed
-  BFF principal request-context contract; preserve D18 and avoid dual identity resolution.
-- **Native review:** unavailable for both observed T6b.3 candidates. Initial inspect
-  refused with `empty_base_diff_bootstrap_required` and returned target `sha256:a0fa7500…`
-  rather than requested `sha256:e3162166…`. After the subject-binding correction,
-  inspect again returned `empty_base_diff_bootstrap_required`, no paths, and target
-  `sha256:6fecb0c0…` rather than the newly supplied `sha256:e4beac79…`. A later inspect
-  failed safely before native mutation (`unrelated target status is inconsistent`,
-  `retry_safe: true`). Standing orders say do not retry unavailable review. No bootstrap,
-  retry or START.
+  so file-level lint remains unavailable, not passed. Added `lib/auth/validated-principal.ts`
+  as a strict branded carrier for claims returned by the trusted BFF boundary; its focused
+  tests pass 6/6 and typecheck passes. It does not parse cookies/tokens or enter request
+  runtime. Projection wiring awaits ATIVVA's typed request-context contract; preserve D18
+  and avoid dual identity resolution.
+- **Native review:** unavailable for observed T6b.3 candidates. Inspect refused with
+  `empty_base_diff_bootstrap_required`, no paths, or failed safely before native mutation
+  (`unrelated target status is inconsistent`). Exact target identities differed across
+  observations; no bootstrap, retry or START.
 
 ## Triage of run 2 (resolved; confirmed by full run 4)
 
