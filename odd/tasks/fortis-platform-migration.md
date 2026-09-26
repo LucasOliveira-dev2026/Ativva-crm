@@ -280,11 +280,15 @@ pnpm test:db   # upstream reference harness (Supabase stubs), same commit
   `package.json` and `lib/db/index.ts` changed signals/line numbers. Commit:
   pending in this work unit.
 - [ ] **T6b.2 — Shared database configuration**. Scope: add `DATABASE_URL` to
-  `lib/env.ts` and `.env.example`, and expose one shared `db()` instance backed
-  by the existing `lib/db` transaction contract. Acceptance: configuration
-  validation rejects missing/invalid URLs; focused tests prove singleton/shared
-  client behavior and existing transaction tests remain green. Next: identify
-  the project’s test pattern and implement configuration tests first.
+  the validated `env` contract and `.env.example`, and expose a shared `db()`
+  instance backed by `createDatabase` and the existing `lib/db` transaction
+  contract. Preserve build-phase placeholder behavior and avoid creating a
+  Prisma pool during module import when configuration is unavailable. Acceptance:
+  focused tests prove URL validation, one shared database instance per process,
+  and lazy creation/clear failure for missing configuration; `lib/db` transaction
+  tests remain green; `pnpm typecheck` passes. No application modules are switched
+  from Supabase in this task. Next: write tests for env validation and shared
+  instance lifecycle before production code, then run the Fortis DB tests.
 - [ ] **T6b.3 — Keycloak session and tenant context**. Scope: implement the BFF
   session using HttpOnly/Secure/SameSite=Strict cookies; resolve the Keycloak
   `sub` through `identity.users`; make `loadAuthUser`/`requireRole` provide the
@@ -311,10 +315,12 @@ pnpm test:db   # upstream reference harness (Supabase stubs), same commit
 
 ## Next Step
 
-Start **T6b.2 only** after T6b.1 is committed: add `DATABASE_URL` to
+T6b.1 is committed as `0f551f441`. Start **T6b.2 only**: add `DATABASE_URL` to
 `lib/env.ts` and `.env.example`, then expose a shared `db()` client while
-preserving the existing transaction contract. Begin by identifying the current
-configuration/test conventions and write focused tests before implementation.
+preserving the existing transaction contract. Begin with tests for URL validation
+and shared-instance lifecycle before implementation. Do not migrate an application
+module in T6b.2; that begins only after auth and adapters are ready for the
+coordinated cutover.
 Subagents per the user's rule: haiku for search, sonnet for triage and mechanical
 rewrites, opus only for hard contract design. No deployment until the atomic
 cutover is complete.
